@@ -1,69 +1,83 @@
-# Prerequisites
+# Compilados / objetos
 *.d
-
-# Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
-
-# Precompiled Headers
 *.gch
 *.pch
-
-# Linker files
 *.ilk
-
-# Debugger Files
 *.pdb
-
-# Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-*.so.*
-
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
 *.a
 *.lib
-
-# Executables
 *.exe
 *.out
 *.app
+*.dwo
 
-# Build directories
+# Carpetas de build de Qt Creator / qmake
 build/
 Build/
 build-*/
+debug/
+release/
+Debug/
+Release/
+*_autogen/
 
-# CMake generated files
+# Archivos generados por qmake / moc / uic / rcc
+Makefile
+Makefile.*
+*.pro.user
+*.pro.user.*
+*.qmake.stash
+moc_*.cpp
+moc_*.h
+ui_*.h
+qrc_*.cpp
+object_script.*
+*.Debug
+*.Release
+
+# CMake (por si lo usan después)
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
-Makefile
 install_manifest.txt
 compile_commands.json
+CMakeLists.txt.user
+cmake-build-*/
 
-# Temporary files
+# Qt Creator / IDE
+.qtcreator/
+.qtc_clangd/
+*.autosave
+*.qmlproject.user
+*.qmlproject.user.*
+.vscode/
+.idea/
+*.user
+*.user.*
+
+# Google Drive / Windows
+desktop.ini
+**/desktop.ini
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporales / logs / backups
 *.tmp
 *.log
 *.bak
 *.swp
+*~
+.cache/
+Testing/
 
 # vcpkg
 vcpkg_installed/
-
-# debug information files
-*.dwo
-
-# test output & cache
-Testing/
-.cache/
