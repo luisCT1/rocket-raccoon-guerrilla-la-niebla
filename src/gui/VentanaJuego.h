@@ -2,38 +2,36 @@
 #define VENTANA_JUEGO_H
 
 #include <QMainWindow>
-#include <QSet>
-#include <QKeyEvent>
 
+class QGraphicsView;
 class QLabel;
 class QTimer;
-class Juego;
-class Rocket;
+class EscenaEmboscada;
 
-//Ventana principal del juego (por ahora HUD de texto mientras armamos la escena)
+//Ventana del nivel 1. El fondo, el puente y el mapache viven en la escena.
 
 class VentanaJuego : public QMainWindow {
     Q_OBJECT
 
 public:
     explicit VentanaJuego(QWidget *parent = nullptr);
-    ~VentanaJuego() override;
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private slots:
     void tick();
 
 private:
-    void actualizarHud();
-    Rocket *rocketActivo() const;
+    void encuadrar();
 
-    Juego *juego;
-    QTimer *reloj;
-    QLabel *hud;
-    QSet<int> teclas;
+    EscenaEmboscada *escena = nullptr;
+    QGraphicsView *vista = nullptr;
+    QLabel *ayuda = nullptr;
+    QTimer *reloj = nullptr;
 };
 
 #endif

@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/nivel1">
+        <file alias="fondo_emboscada.png">recursos/nivel1/fondo_emboscada.png</file>
+        <file alias="puente_oscilante.png">recursos/nivel1/puente_oscilante.png</file>
+        <file alias="rocket_sheet.png">recursos/nivel1/rocket_sheet.png</file>
+        <file alias="soldado_sheet.png">recursos/nivel1/soldado_sheet.png</file>
+        <file alias="jinete_correo.png">recursos/nivel1/jinete_correo.png</file>
+        <file alias="carreta_convoy.png">recursos/nivel1/carreta_convoy.png</file>
+    </qresource>
+</RCC>

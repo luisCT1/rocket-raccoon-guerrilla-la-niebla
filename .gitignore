@@ -20,6 +20,7 @@
 
 # Carpetas de build de Qt Creator / qmake
 build/
+bin/
 Build/
 build-*/
 debug/
