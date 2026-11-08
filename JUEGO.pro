@@ -9,12 +9,20 @@ CONFIG += c++17
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    MovCircular.cpp
+    MovCircular.cpp\
+    Estructura.cpp
 
 HEADERS += \
     mainwindow.h \
     ModeloFisico.h \
-    MovCircular.h
+    MovCircular.h\
+    Eventos.h\
+    Juego.h\
+    Nivel.h\
+    Entidad.h\
+    Estructura.h\
+    Proyectil.h\
+    Rocket.h
 
 
 FORMS += \
