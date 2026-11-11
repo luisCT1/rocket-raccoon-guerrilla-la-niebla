@@ -10,7 +10,10 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     MovCircular.cpp\
-    Estructura.cpp
+    Estructura.cpp\
+    Accion.cpp\
+    Aprendizaje.cpp\
+    Percepcion.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -22,7 +25,11 @@ HEADERS += \
     Entidad.h\
     Estructura.h\
     Proyectil.h\
-    Rocket.h
+    Rocket.h\
+    AgenteTipos.h\
+    Accion.h\
+    Aprendizaje.h\
+    Percepcion.h
 
 
 FORMS += \

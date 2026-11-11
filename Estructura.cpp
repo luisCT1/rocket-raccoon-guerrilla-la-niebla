@@ -63,12 +63,12 @@ void Estructura::actualizar(float dt)
 void Estructura::recibirDanio(float danio)
 {
     if (destruida || danio <= 0.0f) return;
-    if (RESISTENCIA[tipo] <= 0.0f) return;    // indestructible (torre, plataforma, puente)
+    if (RESISTENCIA[tipo] <= 0.0f) return;
 
     resistencia -= danio;
     if (resistencia <= 0.0f) {
         resistencia = 0.0f;
-        destruida = true;                     // sigue viva para el Nivel (ruinas); NO se llama morir()
+        destruida = true;
     }
 }
 
@@ -83,7 +83,6 @@ Proyectil *Estructura::disparar(float objX, float objY)
 
     tiempoDisparo = cadencia;
 
-    // Tiempo de vuelo proporcional a la distancia, acotado: cerca = tiro rápido, lejos = tiro más alto.
     float dx = objX - x, dy = objY - y;
     float vuelo = std::sqrt(dx * dx + dy * dy) / VEL_PROYECTIL;
     if (vuelo < VUELO_MIN) vuelo = VUELO_MIN;
@@ -92,7 +91,7 @@ Proyectil *Estructura::disparar(float objX, float objY)
     Proyectil *p = new Proyectil(x, y, objX, objY, vuelo, GRAVEDAD);
     p->fijarDanio(DANIO_CANON);
     p->fijarDeRocket(false);
-    return p;                                 // el Nivel lo recibe con agregarEntidad()
+    return p;
 }
 
 bool Estructura::detecta(const Rocket *r) const
@@ -104,16 +103,13 @@ bool Estructura::detecta(const Rocket *r) const
     float dy = objetivo->getY() - y;
     float d2 = dx * dx + dy * dy;
 
-    if (d2 > radioCono * radioCono) return false;   // fuera de alcance (sin sqrt)
-    if (d2 < 1.0f) return true;                     // justo debajo de la torre
+    if (d2 > radioCono * radioCono) return false;
+    if (d2 < 1.0f) return true;
 
-    // Dirección hacia donde mira el cono (vector unitario, ya calculado por MovCircular)
     float gx, gy;
     giro->posicion(gx, gy);
     float ux = gx - x, uy = gy - y;
 
-    // Dentro del cono  <=>  cos(angulo entre ambos) >= cos(apertura/2)
-    // Elevando al cuadrado (con producto punto positivo) se evita la raíz cuadrada y la trigonometría.
     float dot = dx * ux + dy * uy;
     return dot > 0.0f && dot * dot >= cos2Media * d2;
 }
