@@ -21,10 +21,12 @@ enum TipoEstructura : short {
 
 class Estructura : public Entidad {
 public:
-
     Estructura(short tipo, float x, float y);
 
     void actualizar(float dt) override;
+    short clase() const override { return CLASE_ESTRUCTURA; }
+    short estadoVisual() const override { return destruida ? 1 : 0; }
+    void alChocar(Entidad &otra) override;
     void recibirDanio(float danio);
 
     Proyectil *disparar(float objX, float objY);
@@ -36,6 +38,8 @@ public:
     short getTipo() const { return tipo; }
     float getResistencia() const { return resistencia; }
     float anguloVigilancia() const;
+    float getRadioCono() const { return radioCono; }
+    float getApertura() const { return apertura; }
 
     void fijarCadencia(float segundos);
     void fijarCono(float radio, float apertura);
@@ -50,8 +54,9 @@ protected:
     float cadencia;
     float tiempoDisparo;
     float radioCono;
+    float apertura;
     float cos2Media;
     MovCircular *giro;
 };
 
-#endif // ESTRUCTURA_H
+#endif

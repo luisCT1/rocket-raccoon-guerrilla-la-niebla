@@ -7,6 +7,7 @@ class Juego {
 public:
     Juego();
     ~Juego();
+
     void iniciarNivel(short numero, short dificultad);
 
     void actualizar(float dt);
@@ -29,4 +30,4 @@ private:
     bool   terminado;
 };
 
-#endif // JUEGO_H
+#endif

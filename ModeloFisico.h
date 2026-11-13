@@ -3,6 +3,7 @@
 
 constexpr float PI_F     = 3.14159265358979f;
 constexpr float DOS_PI_F = 6.28318530717959f;
+constexpr float GRAVEDAD  = 600.0f;
 
 class ModeloFisico {
 public:
@@ -21,4 +22,4 @@ protected:
     bool  activo;
 };
 
-#endif // MODELOFISICO_H
+#endif

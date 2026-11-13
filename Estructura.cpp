@@ -35,6 +35,7 @@ Estructura::Estructura(short t, float x, float y)
       cadencia(CADENCIA[t]),
       tiempoDisparo(CADENCIA[t] * 0.5f),
       radioCono(0.0f),
+      apertura(0.0f),
       cos2Media(0.0f),
       giro(nullptr)
 {
@@ -69,6 +70,16 @@ void Estructura::recibirDanio(float danio)
     if (resistencia <= 0.0f) {
         resistencia = 0.0f;
         destruida = true;
+    }
+}
+
+void Estructura::alChocar(Entidad &otra)
+{
+    if (otra.clase() != CLASE_PROYECTIL) return;
+    Proyectil &p = static_cast<Proyectil &>(otra);
+    if (p.esDeRocket() && !p.haExplotado()) {
+        recibirDanio(p.getDanio());
+        p.explotar();
     }
 }
 
@@ -131,6 +142,7 @@ void Estructura::fijarCono(float radio, float apertura)
     if (radio <= 0.0f || apertura <= 0.0f || apertura >= PI_F)
         throw std::invalid_argument("Estructura: cono invalido (radio > 0 y 0 < apertura < pi)");
     radioCono = radio;
+    this->apertura = apertura;
     float c = std::cos(apertura * 0.5f);
     cos2Media = c * c;
 }

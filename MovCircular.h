@@ -5,7 +5,6 @@
 
 class MovCircular : public ModeloFisico {
 public:
-
     MovCircular(float xc, float yc, float radio, float omega, float theta0 = 0.0f);
 
     void avanzar(float dt) override;
@@ -24,4 +23,4 @@ private:
     float px, py;
 };
 
-#endif // MOVCIRCULAR_H
+#endif

@@ -8,6 +8,7 @@ public:
     Rocket(float x, float y);
 
     void actualizar(float dt) override;
+    short clase() const override { return CLASE_ROCKET; }
     void mover(char direccion);
     void saltar();
     void disparar(float objX, float objY);
@@ -17,6 +18,8 @@ public:
     void recibirDanio();
 
     float ruidoActual() const;
+    bool  lanzoGranadaReciente() const;
+    char  getDireccion() const { return direccion; }
     short getVidas() const { return vidas; }
     bool  estaFurioso() const { return furioso; }
 
@@ -27,4 +30,4 @@ private:
     char  direccion;
 };
 
-#endif // ROCKET_H
+#endif

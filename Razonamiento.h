@@ -17,6 +17,7 @@ public:
     void iniciarRecarga(short accion);
     void actualizarRecargas(float dt);
     bool estaLista(short accion) const;
+    void bloquear(short accion, bool bloqueada);
 
     void fijarAgresividad(float a);
     void fijarFactorRecarga(float f);
@@ -27,6 +28,7 @@ private:
     const Aprendizaje *aprendizaje;
     std::array<float, ACC_NUM> recargas;
     std::array<float, ACC_NUM> sinUsar;
+    std::array<bool, ACC_NUM> bloqueada;
     float agresividad;
     float factorRecarga;
 };

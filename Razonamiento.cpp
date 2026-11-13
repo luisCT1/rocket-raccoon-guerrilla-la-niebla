@@ -21,6 +21,7 @@ Razonamiento::Razonamiento(const Aprendizaje *aprendizaje)
         throw std::invalid_argument("Razonamiento: necesita un Aprendizaje");
     recargas.fill(0.0f);
     sinUsar.fill(0.0f);
+    bloqueada.fill(false);
 }
 
 float Razonamiento::puntaje(short a, const Percepcion *p, short fase) const
@@ -63,7 +64,7 @@ short Razonamiento::decidir(const Percepcion *p, short fase) const
     float mejorPuntaje = 0.0f;
 
     for (short a = 0; a < ACC_NUM; ++a) {
-        if (recargas[a] > 0.0f) continue;
+        if (bloqueada[a] || recargas[a] > 0.0f) continue;
         float s = puntaje(a, p, fase);
         if (s <= NO_DISPONIBLE) continue;
 
@@ -92,7 +93,13 @@ void Razonamiento::actualizarRecargas(float dt)
 
 bool Razonamiento::estaLista(short accion) const
 {
-    return accion >= 0 && accion < ACC_NUM && recargas[accion] <= 0.0f;
+    return accion >= 0 && accion < ACC_NUM && !bloqueada[accion] && recargas[accion] <= 0.0f;
+}
+
+void Razonamiento::bloquear(short accion, bool b)
+{
+    if (accion < 0 || accion >= ACC_NUM) throw std::out_of_range("Razonamiento: accion desconocida");
+    bloqueada[accion] = b;
 }
 
 void Razonamiento::fijarAgresividad(float a)

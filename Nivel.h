@@ -21,9 +21,10 @@ public:
     Rocket *jugador() const { return rocket; }
 
     const std::vector<Entidad *> &obtenerEntidades() const { return entidades; }
-
     void tomarEventos(std::vector<short> &destino);
 
+    float getAnchoMundo() const { return anchoMundo; }
+    float getAltoMundo() const { return altoMundo; }
     float tiempoTranscurrido() const { return tiempo; }
     bool  estaTerminado() const { return terminado; }
     bool  fueGanado() const { return ganado; }
@@ -42,6 +43,7 @@ protected:
     std::vector<Entidad *> entidades;
     std::vector<short> eventos;
     Rocket *rocket;
+    float anchoMundo, altoMundo;
 };
 
-#endif // NIVEL_H
+#endif
