@@ -13,7 +13,12 @@ SOURCES += \
     Estructura.cpp\
     Accion.cpp\
     Aprendizaje.cpp\
-    Percepcion.cpp
+    Percepcion.cpp\
+    Razonamiento.cpp\
+    capitan.cpp\
+    NivelAsalto.cpp\
+    NivelPenon.cpp\
+    Dificultad.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -29,7 +34,13 @@ HEADERS += \
     AgenteTipos.h\
     Accion.h\
     Aprendizaje.h\
-    Percepcion.h
+    Percepcion.h\
+    Razonamiento.h\
+    capitan.h\
+    enemigo.h\
+    NivelAsalto.h\
+    NivelPenon.h\
+    Dificultad.h
 
 
 FORMS += \

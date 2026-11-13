@@ -6,12 +6,19 @@
 class ModeloFisico;
 class Animacion;
 
+enum ClaseEntidad : short { CLASE_ROCKET = 0, CLASE_ENEMIGO, CLASE_CAPITAN, CLASE_PROYECTIL, CLASE_ESTRUCTURA };
+
 class Entidad {
 public:
     Entidad(float x, float y, float ancho, float alto);
     virtual ~Entidad();
 
     virtual void actualizar(float dt);
+
+    virtual short clase() const = 0;
+    virtual short estadoVisual() const { return 0; }
+
+    virtual void alChocar(Entidad &otra) { (void)otra; }
     bool colisiona(const Entidad *otra) const;
     void agregarModelo(ModeloFisico *m);
     void fijarAnimacion(Animacion *a);
@@ -35,4 +42,4 @@ protected:
     Animacion *animacion;
 };
 
-#endif // ENTIDAD_H
+#endif
