@@ -1,5 +1,5 @@
-#ifndef NIVELPENON_H
-#define NIVELPENON_H
+#ifndef NIVEL_PENON_H
+#define NIVEL_PENON_H
 
 #include "Nivel.h"
 #include "Dificultad.h"
@@ -11,32 +11,37 @@ class Proyectil;
 class Aprendizaje;
 
 class NivelPenon : public Nivel {
-public:
-    explicit NivelPenon(short dificultad, Aprendizaje *memoria = nullptr);
-
-    void actualizar(float dt) override;
-    bool victoria() const override { return terminado && ganado; }
-    bool derrota() const override  { return terminado && !ganado; }
-
-    void cambiarFase();
-    void ponerBandera();
-
-    Capitan *getCapitan() const { return capitan; }
-    Estructura *getCanon() const { return canon; }
-    const Dificultad &getDificultad() const { return dificultad; }
-    bool  estaBanderaPuesta() const { return banderaPuesta; }
-    float getBanderaX() const;
-    float getBanderaY() const;
-
 private:
-    void seguirDisparos();
-
     Capitan *capitan;
     Dificultad dificultad;
     bool banderaPuesta;
     Estructura *canon;
     std::vector<Proyectil *> disparosCanon;
     bool canonAvisado;
+
+    void seguirDisparos();
+
+protected:
+    void alBorrar(Entidad *e) override;
+
+public:
+    explicit NivelPenon(short dificultad, Aprendizaje *memoria = nullptr);
+    ~NivelPenon() override;
+
+    void actualizar(float dt) override;
+    bool victoria() const override;
+    bool derrota() const override;
+
+    void cambiarFase();
+    void ponerBandera();
+
+    Capitan *getCapitan() const;
+    Estructura *getCanon() const;
+    const Dificultad &getDificultad() const;
+    bool estaBanderaPuesta() const;
+    float getBanderaX() const;
+    float getBanderaY() const;
+    float getBanderaRadio() const;
 };
 
 #endif

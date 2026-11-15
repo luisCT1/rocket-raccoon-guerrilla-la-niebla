@@ -4,11 +4,19 @@
 #include <vector>
 
 class ModeloFisico;
-class Animacion;
 
 enum ClaseEntidad : short { CLASE_ROCKET = 0, CLASE_ENEMIGO, CLASE_CAPITAN, CLASE_PROYECTIL, CLASE_ESTRUCTURA };
 
 class Entidad {
+protected:
+    float x;
+    float y;
+    float ancho;
+    float alto;
+    bool viva;
+    bool seguirModelos;
+    std::vector<ModeloFisico *> modelos;
+
 public:
     Entidad(float x, float y, float ancho, float alto);
     virtual ~Entidad();
@@ -16,30 +24,27 @@ public:
     virtual void actualizar(float dt);
 
     virtual short clase() const = 0;
-    virtual short estadoVisual() const { return 0; }
+    virtual short estadoVisual() const;
 
-    virtual void alChocar(Entidad &otra) { (void)otra; }
+    virtual bool esSolida() const;
+    virtual void alChocar(Entidad &otra);
+    virtual void recibirDanio(float cantidad);
+
     bool colisiona(const Entidad *otra) const;
-    void agregarModelo(ModeloFisico *m);
-    void fijarAnimacion(Animacion *a);
-    Animacion *obtenerAnimacion() const { return animacion; }
+    void agregarModelo(ModeloFisico *modelo);
 
-    float getX() const { return x; }
-    float getY() const { return y; }
-    float getAncho() const { return ancho; }
-    float getAlto() const { return alto; }
-    bool  estaViva() const { return viva; }
-    void  fijarPosicion(float nx, float ny) { x = nx; y = ny; }
-    void  morir() { viva = false; }
+    float getX() const;
+    float getY() const;
+    float getAncho() const;
+    float getAlto() const;
+    float getCentroX() const;
+    float getCentroY() const;
+    bool estaViva() const;
+    void setPosicion(float nx, float ny);
+    void matar();
 
     Entidad(const Entidad &) = delete;
     Entidad &operator=(const Entidad &) = delete;
-
-protected:
-    float x, y, ancho, alto;
-    bool  viva;
-    std::vector<ModeloFisico *> modelos;
-    Animacion *animacion;
 };
 
 #endif

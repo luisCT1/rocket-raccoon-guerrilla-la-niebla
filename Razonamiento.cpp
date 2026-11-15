@@ -14,10 +14,10 @@ static const float CERCA = 150.0f;
 static const float LEJOS = 300.0f;
 static const float EMPATE = 1e-4f;
 
-Razonamiento::Razonamiento(const Aprendizaje *aprendizaje)
-    : aprendizaje(aprendizaje), agresividad(1.0f), factorRecarga(1.0f)
+Razonamiento::Razonamiento(const Aprendizaje *memoria)
+    : aprendizaje(memoria), agresividad(1.0f), factorRecarga(1.0f)
 {
-    if (aprendizaje == nullptr)
+    if (memoria == nullptr)
         throw std::invalid_argument("Razonamiento: necesita un Aprendizaje");
     recargas.fill(0.0f);
     sinUsar.fill(0.0f);

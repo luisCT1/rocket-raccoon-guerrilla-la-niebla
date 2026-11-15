@@ -7,27 +7,43 @@ class Rocket;
 class Proyectil;
 
 class Enemigo : public Entidad {
-public:
-    Enemigo(float x, float y);
-    ~Enemigo() override;
-
-    void actualizar(float dt) override;
-    short clase() const override { return CLASE_ENEMIGO; }
-
-    bool veA(const Rocket *r) const;
-    Proyectil *disparar(float objX, float objY);
-    virtual void recibirDanio(float danio);
-
-    void  fijarObjetivo(const Rocket *r) { objetivo = r; }
-    float getVida() const { return vida; }
-
 protected:
     float vida;
     float velocidad;
     float alcanceVision;
-    bool  esCorreo;
-    char  direccion;
+    bool esCorreo;
+    char direccion;
     const Rocket *objetivo;
+    bool cenital;
+    float minX;
+    float maxX;
+    float origenX;
+    float recargaDisparo;
+    bool persiguiendo;
+
+public:
+    Enemigo(float x, float y);
+    virtual ~Enemigo();
+
+    void actualizar(float dt) override;
+    short clase() const override;
+    short estadoVisual() const override;
+    void alChocar(Entidad &otra) override;
+    void recibirDanio(float cantidad) override;
+
+    bool veA(const Rocket *r) const;
+    bool listoParaDisparar() const;
+    Proyectil *disparar(float objX, float objY);
+
+    void fijarObjetivo(const Rocket *r);
+    void fijarCenital(bool c);
+    void fijarLimites(float minimoX, float maximoX);
+    void fijarAlcanceVision(float alcance);
+    void fijarCorreo(bool c);
+
+    bool getEsCorreo() const;
+    float getVida() const;
+    char getDireccion() const;
 };
 
 #endif

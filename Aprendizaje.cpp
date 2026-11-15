@@ -42,9 +42,9 @@ void Aprendizaje::recalcularBonos()
     for (short c : conteoHabitos) total += c;
     if (total == 0) return;
 
-    float confianza = total >= CONFIANZA_MIN ? 1.0f : static_cast<float>(total) / CONFIANZA_MIN;
+    float confianza = total >= CONFIANZA_MIN ? 1.0f : static_cast<float>(total) / static_cast<float>(CONFIANZA_MIN);
     for (short h = 0; h < HAB_NUM; ++h)
-        bonoAccion[CONTRA[h]] += BONO_HABITO * confianza * (static_cast<float>(conteoHabitos[h]) / total);
+        bonoAccion[CONTRA[h]] += BONO_HABITO * confianza * (static_cast<float>(conteoHabitos[h]) / static_cast<float>(total));
 }
 
 void Aprendizaje::resultado(short accion, bool acerto)

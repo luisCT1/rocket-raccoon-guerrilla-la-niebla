@@ -1,54 +1,53 @@
 #include "Capitan.h"
 #include "Aprendizaje.h"
 #include "MovCircular.h"
-#include "Proyectil.h"
 #include "Rocket.h"
 #include <stdexcept>
 
-static const float ANCHO_CAPITAN      = 60.0f;
-static const float ALTO_CAPITAN       = 90.0f;
-static const float VIDA_CAPITAN       = 300.0f;
-static const float INTERVALO_DECISION = 0.2f;
-static const float PAUSA_ENTRE_ACCIONES = 0.8f;
-static const float VELOCIDAD          = 140.0f;
-static const float DISTANCIA_MINIMA   = 30.0f;
-static const float RADIO_GIRO         = 110.0f;
-static const float RADIO_GOLPE_GIRO   = 35.0f;
-static const float OMEGA_FASE[3]      = { 4.0f, 5.0f, 6.5f };
-static const float TROMBA_MAX         = 260.0f;
-static const float TROMBA_GROSOR      = 45.0f;
-static const float TROMBA_ALTURA      = 80.0f;
-static const float TIEMPO_HABITO      = 2.0f;
-static const float DISTANCIA_LEJOS    = 300.0f;
+namespace {
+constexpr float ANCHO_CAPITAN = 60.f;
+constexpr float ALTO_CAPITAN = 90.f;
+constexpr float VIDA_CAPITAN = 1000.f;
+constexpr float INTERVALO_DECISION = 0.2f;
+constexpr float PAUSA_ENTRE_ACCIONES = 0.8f;
+constexpr float VELOCIDAD = 140.f;
+constexpr float DISTANCIA_MINIMA = 30.f;
+constexpr float RADIO_GIRO = 110.f;
+constexpr float RADIO_GOLPE_GIRO = 35.f;
+const float OMEGA_FASE[3] = { 4.f, 5.f, 6.5f };
+constexpr float TROMBA_MAX = 260.f;
+constexpr float TROMBA_GROSOR = 45.f;
+constexpr float TROMBA_ALTURA = 80.f;
+constexpr float TIEMPO_HABITO = 2.f;
+constexpr float DISTANCIA_LEJOS = 300.f;
+}
 
-Capitan::Capitan(float x, float y, Aprendizaje *memoria)
-    : Enemigo(x, y),
-      aprendizaje(memoria ? memoria : new Aprendizaje()),
-      duenoAprendizaje(memoria == nullptr),
+Capitan::Capitan(float x_, float y_, Aprendizaje *memoria_)
+    : Enemigo(x_, y_),
+      aprendizaje(memoria_ ? memoria_ : new Aprendizaje()),
+      duenoAprendizaje(memoria_ == nullptr),
       percepcion(),
       razonamiento(aprendizaje),
       accion(),
-      fase(FASE_ACOSA), vidaMax(VIDA_CAPITAN), acumulador(0.0f), descanso(0.0f), tiempoAlto(0.0f), tiempoLejos(0.0f),
+      fase(FASE_ACOSA), vidaMax(VIDA_CAPITAN), acumulador(0.f), descanso(0.f), tiempoAlto(0.f), tiempoLejos(0.f),
       estimuloPrevio(ESTIM_NINGUNO), resultadoReportado(true), yaGolpeo(false),
-      ordenCanon(false), canonX(0.0f), canonY(0.0f), cambioFase(false), inicioAccion(ACC_NINGUNA),
-      giro(nullptr), minX(-1.0e9f), maxX(1.0e9f), factorVelocidad(1.0f), derrotado(false)
-{
+      ordenCanon(false), canonX(0.f), canonY(0.f), cambioFase(false), inicioAccion(ACC_NINGUNA),
+      giro(nullptr), factorVelocidad(1.f), derrotado(false) {
     ancho = ANCHO_CAPITAN;
-    alto  = ALTO_CAPITAN;
-    vida  = VIDA_CAPITAN;
+    alto = ALTO_CAPITAN;
+    vida = VIDA_CAPITAN;
+    seguirModelos = false;
 
-    giro = new MovCircular(x, y, RADIO_GIRO, OMEGA_FASE[0]);
+    giro = new MovCircular(getCentroX(), getCentroY(), RADIO_GIRO, OMEGA_FASE[0]);
     giro->activar(false);
     agregarModelo(giro);
 }
 
-Capitan::~Capitan()
-{
+Capitan::~Capitan() {
     if (duenoAprendizaje) delete aprendizaje;
 }
 
-void Capitan::actualizar(float dt)
-{
+void Capitan::actualizar(float dt) {
     if (derrotado) return;
 
     Entidad::actualizar(dt);
@@ -58,35 +57,34 @@ void Capitan::actualizar(float dt)
     if (accion.estaTerminada() && !resultadoReportado) {
         finalizarAccion();
         descanso = PAUSA_ENTRE_ACCIONES / factorVelocidad;
-    } else if (descanso > 0.0f) {
+    } else if (descanso > 0.f) {
         descanso -= dt;
     }
 
     acumulador += dt;
-    bool libre = accion.estaTerminada() && descanso <= 0.0f;
+    const bool libre = accion.estaTerminada() && descanso <= 0.f;
     if (acumulador >= INTERVALO_DECISION - 1.0e-4f || libre) {
         ciclo(objetivo, acumulador);
-        acumulador = 0.0f;
+        acumulador = 0.f;
     }
     moverse(dt);
 }
 
-void Capitan::ciclo(const Rocket *r, float dt)
-{
-    if (derrotado || r == nullptr) return;
+void Capitan::ciclo(const Rocket *r, float dt) {
+    if (derrotado || !r) return;
 
-    percepcion.percibir(r, x, y, dt);
+    percepcion.percibir(r, getCentroX(), getCentroY(), dt);
 
-    short e = percepcion.estimulo();
+    const short e = percepcion.estimulo();
     if (e != estimuloPrevio) {
         if (e == ESTIM_DASH) aprendizaje->registrarHabito(HAB_DASH);
         else if (e == ESTIM_GRANADA) aprendizaje->registrarHabito(HAB_GRANADA);
         estimuloPrevio = e;
     }
-    tiempoAlto = percepcion.rocketAlto() ? tiempoAlto + dt : 0.0f;
-    if (tiempoAlto >= TIEMPO_HABITO) { aprendizaje->registrarHabito(HAB_ALTO); tiempoAlto = 0.0f; }
-    tiempoLejos = percepcion.getDistancia() > DISTANCIA_LEJOS ? tiempoLejos + dt : 0.0f;
-    if (tiempoLejos >= TIEMPO_HABITO) { aprendizaje->registrarHabito(HAB_LEJOS); tiempoLejos = 0.0f; }
+    tiempoAlto = percepcion.rocketAlto() ? tiempoAlto + dt : 0.f;
+    if (tiempoAlto >= TIEMPO_HABITO) { aprendizaje->registrarHabito(HAB_ALTO); tiempoAlto = 0.f; }
+    tiempoLejos = percepcion.getDistancia() > DISTANCIA_LEJOS ? tiempoLejos + dt : 0.f;
+    if (tiempoLejos >= TIEMPO_HABITO) { aprendizaje->registrarHabito(HAB_LEJOS); tiempoLejos = 0.f; }
 
     if (!accion.estaTerminada()) return;
 
@@ -94,14 +92,13 @@ void Capitan::ciclo(const Rocket *r, float dt)
         finalizarAccion();
         descanso = PAUSA_ENTRE_ACCIONES / factorVelocidad;
     }
-    if (descanso > 0.0f) return;
+    if (descanso > 0.f) return;
 
-    short a = razonamiento.decidir(&percepcion, fase);
+    const short a = razonamiento.decidir(&percepcion, fase);
     if (a != ACC_NINGUNA) iniciarAccion(a, r);
 }
 
-void Capitan::iniciarAccion(short a, const Rocket *r)
-{
+void Capitan::iniciarAccion(short a, const Rocket *r) {
     accion.ejecutar(a, r);
     razonamiento.iniciarRecarga(a);
     resultadoReportado = false;
@@ -113,58 +110,71 @@ void Capitan::iniciarAccion(short a, const Rocket *r)
         canonX = accion.getDestinoX();
         canonY = accion.getDestinoY();
     } else if (a == ACC_GIRATORIO) {
-        giro->fijarCentro(x, y);
+        giro->fijarCentro(getCentroX(), getCentroY());
         giro->reiniciar();
         giro->activar(true);
     }
 }
 
-void Capitan::finalizarAccion()
-{
+void Capitan::finalizarAccion() {
     giro->activar(false);
-    short a = accion.getActual();
+    const short a = accion.getActual();
     if (a == ACC_NINGUNA || resultadoReportado) return;
     resultadoReportado = true;
     if (a != ACC_CANON && a != ACC_REPLEGARSE)
         aprendizaje->resultado(a, accion.acerto());
 }
 
-void Capitan::moverse(float dt)
-{
-    if (objetivo == nullptr || accion.estaTerminada()) return;
+void Capitan::moverse(float dt) {
+    if (!objetivo || accion.estaTerminada()) return;
 
-    const Entidad *o = objetivo;
-    float dx = o->getX() - x;
-    float sentido = dx >= 0.0f ? 1.0f : -1.0f;
-    direccion = dx >= 0.0f ? 'd' : 'a';
+    const float dx = objetivo->getCentroX() - getCentroX();
+    const float sentido = dx >= 0.f ? 1.f : -1.f;
+    direccion = dx >= 0.f ? 'R' : 'L';
 
-    short a = accion.getActual();
+    const short a = accion.getActual();
     if (a == ACC_ACOSAR) {
         if (dx * sentido > DISTANCIA_MINIMA) x += sentido * VELOCIDAD * factorVelocidad * dt;
     } else if (a == ACC_REPLEGARSE) {
         x -= sentido * VELOCIDAD * factorVelocidad * dt;
     }
-    if (x < minX) x = minX; else if (x > maxX) x = maxX;
+    if (x < minX) x = minX;
+    else if (x > maxX) x = maxX;
 
-    if (giro->estaActivo()) giro->fijarCentro(x, y);
+    if (giro->estaActivo()) giro->fijarCentro(getCentroX(), getCentroY());
 }
 
-void Capitan::recibirDanio(float danio)
-{
-    if (derrotado || danio <= 0.0f) return;
-    vida -= danio;
-    if (vida <= 0.0f) {
-        vida = 0.0f;
+short Capitan::clase() const {
+    return CLASE_CAPITAN;
+}
+
+short Capitan::estadoVisual() const {
+    if (derrotado) return 99;
+    return accion.estaTerminada() ? 0 : static_cast<short>(accion.getActual() + 1);
+}
+
+bool Capitan::esSolida() const {
+    return !derrotado;
+}
+
+void Capitan::alChocar(Entidad &otra) {
+    (void)otra;
+}
+
+void Capitan::recibirDanio(float cantidad) {
+    if (derrotado || cantidad <= 0.f) return;
+    vida -= cantidad;
+    if (vida <= 0.f) {
+        vida = 0.f;
         derrotado = true;
         giro->activar(false);
     }
     actualizarFase();
 }
 
-void Capitan::actualizarFase()
-{
-    float fraccion = vida / vidaMax;
-    short nueva = fraccion > 0.66f ? FASE_ACOSA : (fraccion > 0.33f ? FASE_CANON : FASE_AGRESIVO);
+void Capitan::actualizarFase() {
+    const float fraccion = vida / vidaMax;
+    const short nueva = fraccion > 0.66f ? FASE_ACOSA : (fraccion > 0.33f ? FASE_CANON : FASE_AGRESIVO);
     if (nueva != fase) {
         fase = nueva;
         cambioFase = true;
@@ -172,53 +182,39 @@ void Capitan::actualizarFase()
     }
 }
 
-void Capitan::alChocar(Entidad &otra)
-{
-    if (otra.clase() != CLASE_PROYECTIL) return;
-    Proyectil &p = static_cast<Proyectil &>(otra);
-    if (p.esDeRocket() && !p.haExplotado()) {
-        recibirDanio(p.getDanio());
-        p.explotar();
-    }
-}
+bool Capitan::alcanzaA(const Rocket *r) const {
+    if (derrotado || !r || yaGolpeo || accion.estaTerminada()) return false;
 
-bool Capitan::golpeaA(const Rocket *r)
-{
-    if (derrotado || r == nullptr || yaGolpeo || accion.estaTerminada()) return false;
-
-    const Entidad *o = r;
-    bool toca = false;
     switch (accion.getActual()) {
     case ACC_ACOSAR:
-        toca = colisiona(o);
-        break;
+        return colisiona(r);
     case ACC_GIRATORIO: {
         float gx, gy;
         giro->posicion(gx, gy);
-        float dx = o->getX() - gx, dy = o->getY() - gy;
-        float alcance = RADIO_GOLPE_GIRO + o->getAncho() * 0.5f;
-        toca = dx * dx + dy * dy <= alcance * alcance;
-        break;
+        const float dx = r->getCentroX() - gx;
+        const float dy = r->getCentroY() - gy;
+        const float alcance = RADIO_GOLPE_GIRO + r->getAncho() * 0.5f;
+        return dx * dx + dy * dy <= alcance * alcance;
     }
     case ACC_TROMBA: {
-        float frente = radioTromba();
-        float adx = o->getX() - x; if (adx < 0.0f) adx = -adx;
-        float ady = o->getY() - y; if (ady < 0.0f) ady = -ady;
-        toca = adx <= frente && adx >= frente - TROMBA_GROSOR && ady < TROMBA_ALTURA;
-        break;
+        const float frente = radioTromba();
+        float adx = r->getCentroX() - getCentroX();
+        if (adx < 0.f) adx = -adx;
+        float ady = r->getCentroY() - getCentroY();
+        if (ady < 0.f) ady = -ady;
+        return adx <= frente && adx >= frente - TROMBA_GROSOR && ady < TROMBA_ALTURA;
     }
     default:
-        break;
+        return false;
     }
-    if (toca) {
-        yaGolpeo = true;
-        accion.marcarAcierto();
-    }
-    return toca;
 }
 
-bool Capitan::consumirOrdenCanon(float &objX, float &objY)
-{
+void Capitan::confirmarGolpe() {
+    yaGolpeo = true;
+    accion.marcarAcierto();
+}
+
+bool Capitan::consumirOrdenCanon(float &objX, float &objY) {
     if (!ordenCanon) return false;
     ordenCanon = false;
     objX = canonX;
@@ -226,77 +222,63 @@ bool Capitan::consumirOrdenCanon(float &objX, float &objY)
     return true;
 }
 
-bool Capitan::consumirCambioFase()
-{
-    bool c = cambioFase;
+bool Capitan::consumirCambioFase() {
+    const bool c = cambioFase;
     cambioFase = false;
     return c;
 }
 
-short Capitan::consumirInicioAccion()
-{
-    short a = inicioAccion;
+short Capitan::consumirInicioAccion() {
+    const short a = inicioAccion;
     inicioAccion = ACC_NINGUNA;
     return a;
 }
 
-void Capitan::resultadoCanon(bool acerto)
-{
+void Capitan::resultadoCanon(bool acerto) {
     aprendizaje->resultado(ACC_CANON, acerto);
 }
 
-void Capitan::fijarCanonDisponible(bool disponible)
-{
+void Capitan::fijarCanonDisponible(bool disponible) {
     razonamiento.bloquear(ACC_CANON, !disponible);
 }
 
-void Capitan::fijarLimites(float minimoX, float maximoX)
-{
-    if (minimoX > maximoX) throw std::invalid_argument("Capitan: limites invertidos");
-    minX = minimoX;
-    maxX = maximoX;
-}
-
 void Capitan::fijarRetrasoPercepcion(float segundos) { percepcion.fijarRetraso(segundos); }
-void Capitan::fijarAgresividad(float a)              { razonamiento.fijarAgresividad(a); }
-void Capitan::fijarTasaAprendizaje(float t)          { aprendizaje->fijarTasa(t); }
+void Capitan::fijarAgresividad(float a) { razonamiento.fijarAgresividad(a); }
+void Capitan::fijarTasaAprendizaje(float t) { aprendizaje->fijarTasa(t); }
 
-void Capitan::fijarVelocidadAtaques(float factor)
-{
-    if (factor <= 0.3f || factor > 3.0f)
+void Capitan::fijarVelocidadAtaques(float factor) {
+    if (factor <= 0.3f || factor > 3.f)
         throw std::invalid_argument("Capitan: el factor de velocidad debe estar en (0.3, 3]");
     factorVelocidad = factor;
-    razonamiento.fijarFactorRecarga(1.0f / factor);
+    razonamiento.fijarFactorRecarga(1.f / factor);
     giro->fijarOmega(OMEGA_FASE[fase - 1] * factor);
 }
 
-short Capitan::estadoVisual() const
-{
-    if (derrotado) return 99;
-    return accion.estaTerminada() ? 0 : static_cast<short>(accion.getActual() + 1);
-}
+short Capitan::getFase() const { return fase; }
+bool Capitan::estaDerrotado() const { return derrotado; }
+float Capitan::getVidaMax() const { return vidaMax; }
 
-short Capitan::accionActual() const
-{
+short Capitan::accionActual() const {
     return accion.estaTerminada() ? static_cast<short>(ACC_NINGUNA) : accion.getActual();
 }
 
-bool Capitan::giratorioActivo() const
-{
+float Capitan::avanceAccion() const { return accion.getAvance(); }
+
+bool Capitan::giratorioActivo() const {
     return !derrotado && giro->estaActivo();
 }
 
-void Capitan::posicionGiratorio(float &gx, float &gy) const
-{
+void Capitan::posicionGiratorio(float &gx, float &gy) const {
     giro->posicion(gx, gy);
 }
 
-bool Capitan::trombaActiva() const
-{
+bool Capitan::trombaActiva() const {
     return !derrotado && !accion.estaTerminada() && accion.getActual() == ACC_TROMBA;
 }
 
-float Capitan::radioTromba() const
-{
-    return trombaActiva() ? TROMBA_MAX * accion.getAvance() : 0.0f;
+float Capitan::radioTromba() const {
+    return trombaActiva() ? TROMBA_MAX * accion.getAvance() : 0.f;
 }
+
+const Aprendizaje *Capitan::memoria() const { return aprendizaje; }
+const Percepcion &Capitan::verPercepcion() const { return percepcion; }

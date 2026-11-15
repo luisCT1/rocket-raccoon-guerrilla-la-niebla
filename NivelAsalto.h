@@ -1,5 +1,5 @@
-#ifndef NIVELASALTO_H
-#define NIVELASALTO_H
+#ifndef NIVEL_ASALTO_H
+#define NIVEL_ASALTO_H
 
 #include "Nivel.h"
 #include <vector>
@@ -7,41 +7,13 @@
 class Estructura;
 
 class NivelAsalto : public Nivel {
-public:
-    NivelAsalto();
-
-    void actualizar(float dt) override;
-    bool victoria() const override { return terminado && ganado; }
-    bool derrota() const override  { return terminado && !ganado; }
-
-    void actualizarReloj(float dt);
-    void generarRefuerzos();
-    bool tareasCompletas() const { return tareasHechas >= 3; }
-
-    float getTiempoRestante() const { return tiempoRestante; }
-    float getTiempoLimite() const { return tiempoLimite; }
-    short getTareasHechas() const { return tareasHechas; }
-    bool  estaPolvorinVolado() const { return polvorinVolado; }
-    bool  estaBanderaTumbada() const { return banderaTumbada; }
-    bool  estaCanonInutilizado() const { return canonInutilizado; }
-    float getSalidaX() const;
-    float getSalidaY() const;
-    float getSalidaRadio() const;
-    Estructura *getPolvorin() const { return polvorin; }
-    Estructura *getBandera() const { return bandera; }
-    Estructura *getCanon() const { return canon; }
-    const std::vector<Estructura *> &getTorres() const { return torres; }
-
 private:
-    void revisarTareas();
-    bool rocketEnSalida() const;
-
     float tiempoLimite;
     float tiempoRestante;
     short tareasHechas;
-    bool  polvorinVolado;
-    bool  banderaTumbada;
-    bool  canonInutilizado;
+    bool polvorinVolado;
+    bool banderaTumbada;
+    bool canonInutilizado;
 
     Estructura *polvorin;
     Estructura *bandera;
@@ -49,6 +21,35 @@ private:
     std::vector<Estructura *> torres;
     float enfriamientoAlarma;
     short siguientePunto;
+
+    void revisarTareas();
+    bool rocketEnSalida() const;
+
+public:
+    NivelAsalto();
+    ~NivelAsalto() override;
+
+    void actualizar(float dt) override;
+    bool victoria() const override;
+    bool derrota() const override;
+
+    void actualizarReloj(float dt);
+    void generarRefuerzos();
+    bool tareasCompletas() const;
+
+    float getTiempoRestante() const;
+    float getTiempoLimite() const;
+    short getTareasHechas() const;
+    bool estaPolvorinVolado() const;
+    bool estaBanderaTumbada() const;
+    bool estaCanonInutilizado() const;
+    float getSalidaX() const;
+    float getSalidaY() const;
+    float getSalidaRadio() const;
+    Estructura *getPolvorin() const;
+    Estructura *getBandera() const;
+    Estructura *getCanon() const;
+    const std::vector<Estructura *> &getTorres() const;
 };
 
 #endif

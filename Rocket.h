@@ -3,31 +3,77 @@
 
 #include "Entidad.h"
 
+class Proyectil;
+
 class Rocket : public Entidad {
+private:
+    short vidas;
+    short municion;
+    short granadas;
+    float barraFuria;
+    bool furioso;
+    float tiempoFuria;
+    float recargaDash;
+    float bloqueoDisparo;
+    float radioRuido;
+    char direccion;
+    bool enSuelo;
+
+    bool cenital;
+    float intencionX;
+    float intencionY;
+    bool moviendose;
+    float velY;
+    float xAnterior;
+    float yAnterior;
+    float tiempoDash;
+    float dashX;
+    float dashY;
+    float invulnerable;
+    float recargaDisparo;
+    float recargaMunicion;
+    float avisoGranada;
+    bool golpePendiente;
+
 public:
     Rocket(float x, float y);
+    ~Rocket() override;
 
     void actualizar(float dt) override;
-    short clase() const override { return CLASE_ROCKET; }
-    void mover(char direccion);
-    void saltar();
-    void disparar(float objX, float objY);
-    void lanzarGranada(float objX, float objY);
-    void dash(char direccion);
-    void activarFuria();
-    void recibirDanio();
+    short clase() const override;
+    short estadoVisual() const override;
+    void recibirDanio(float cantidad) override;
 
+    void mover(char dir);
+    bool saltar();
+    Proyectil *disparar(float objX, float objY);
+    Proyectil *lanzarGranada(float objX, float objY);
+    bool dash(char dir);
+    bool activarFuria();
+    bool recibirDanio();
+    void perderVida();
+    void sumarFuria(float cantidad);
     float ruidoActual() const;
-    bool  lanzoGranadaReciente() const;
-    char  getDireccion() const { return direccion; }
-    short getVidas() const { return vidas; }
-    bool  estaFurioso() const { return furioso; }
+    bool lanzoGranadaReciente() const;
+    bool consumirGolpe();
 
-private:
-    short vidas, municion, granadas;
-    float barraFuria, tiempoFuria, recargaDash, bloqueoDisparo, radioRuido;
-    bool  furioso, enSuelo;
-    char  direccion;
+    void fijarCenital(bool c);
+    void aterrizarEn(float ySuperficie);
+    void soltarSuelo();
+    void reaparecerEn(float nx, float ny);
+
+    short getVidas() const;
+    short getMunicion() const;
+    short getGranadas() const;
+    float getBarraFuria() const;
+    float getVelY() const;
+    float getXAnterior() const;
+    float getYAnterior() const;
+    char getDireccion() const;
+    bool estaFurioso() const;
+    bool estaEnSuelo() const;
+    bool esInvulnerable() const;
+    bool dashListo() const;
 };
 
 #endif

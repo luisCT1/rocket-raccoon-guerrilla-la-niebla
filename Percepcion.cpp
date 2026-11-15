@@ -26,12 +26,11 @@ void Percepcion::percibir(const Rocket *r, float capX, float capY, float dt)
         return;
     }
 
-    const Entidad *e = r;
-    float dx = e->getX() - capX;
-    float dy = e->getY() - capY;
+    float dx = r->getCentroX() - capX;
+    float dy = r->getCentroY() - capY;
     distancia = std::sqrt(dx * dx + dy * dy);
     ladoRocket = dx >= 0.0f ? 1 : -1;
-    alto = e->getY() < capY - UMBRAL_ALTO;
+    alto = r->getCentroY() < capY - UMBRAL_ALTO;
 
     short tipo = ESTIM_NINGUNO;
     float inten = 0.0f;

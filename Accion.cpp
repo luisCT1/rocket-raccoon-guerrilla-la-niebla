@@ -15,11 +15,10 @@ void Accion::ejecutar(short accion, const Rocket *r)
     if (accion < 0 || accion >= ACC_NUM) throw std::out_of_range("Accion: accion desconocida");
     if (r == nullptr) throw std::invalid_argument("Accion: falta el objetivo");
 
-    const Entidad *e = r;
     actual = accion;
     duracion = restante = DURACION[accion];
-    destinoX = e->getX();
-    destinoY = e->getY();
+    destinoX = r->getCentroX();
+    destinoY = r->getCentroY();
     terminada = false;
     acierto = false;
     inicioPendiente = true;

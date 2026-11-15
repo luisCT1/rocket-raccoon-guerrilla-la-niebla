@@ -20,43 +20,43 @@ enum TipoEstructura : short {
 };
 
 class Estructura : public Entidad {
-public:
-    Estructura(short tipo, float x, float y);
-
-    void actualizar(float dt) override;
-    short clase() const override { return CLASE_ESTRUCTURA; }
-    short estadoVisual() const override { return destruida ? 1 : 0; }
-    void alChocar(Entidad &otra) override;
-    void recibirDanio(float danio);
-
-    Proyectil *disparar(float objX, float objY);
-    bool listaParaDisparar() const;
-
-    bool detecta(const Rocket *r) const;
-
-    bool  estaDestruida() const { return destruida; }
-    short getTipo() const { return tipo; }
-    float getResistencia() const { return resistencia; }
-    float anguloVigilancia() const;
-    float getRadioCono() const { return radioCono; }
-    float getApertura() const { return apertura; }
-
-    void fijarCadencia(float segundos);
-    void fijarCono(float radio, float apertura);
-    void fijarVelocidadGiro(float omega);
-    void fijarOscila(bool o) { oscila = o; }
-
 protected:
     short tipo;
     float resistencia;
-    bool  destruida;
-    bool  oscila;
+    bool destruida;
+    bool destruccionPendiente;
     float cadencia;
     float tiempoDisparo;
     float radioCono;
     float apertura;
     float cos2Media;
     MovCircular *giro;
+
+public:
+    Estructura(short tipo, float x, float y);
+
+    void actualizar(float dt) override;
+    short clase() const override;
+    short estadoVisual() const override;
+    bool esSolida() const override;
+    void recibirDanio(float cantidad) override;
+
+    Proyectil *disparar(float objX, float objY);
+    bool listaParaDisparar() const;
+
+    bool detecta(const Rocket *r) const;
+
+    bool estaDestruida() const;
+    bool consumirDestruccion();
+    short getTipo() const;
+    float getResistencia() const;
+    float anguloVigilancia() const;
+    float getRadioCono() const;
+    float getApertura() const;
+
+    void fijarCadencia(float segundos);
+    void fijarCono(float radio, float apertura);
+    void fijarVelocidadGiro(float omega);
 };
 
 #endif

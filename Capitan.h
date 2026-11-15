@@ -11,71 +11,73 @@ class Aprendizaje;
 class MovCircular;
 
 class Capitan : public Enemigo {
+private:
+    Aprendizaje *aprendizaje;
+    bool duenoAprendizaje;
+    Percepcion percepcion;
+    Razonamiento razonamiento;
+    Accion accion;
+
+    short fase;
+    float vidaMax;
+    float acumulador;
+    float descanso;
+    float tiempoAlto;
+    float tiempoLejos;
+    short estimuloPrevio;
+    bool resultadoReportado;
+    bool yaGolpeo;
+    bool ordenCanon;
+    float canonX;
+    float canonY;
+    bool cambioFase;
+    short inicioAccion;
+    MovCircular *giro;
+    float factorVelocidad;
+    bool derrotado;
+
+    void iniciarAccion(short a, const Rocket *r);
+    void finalizarAccion();
+    void moverse(float dt);
+
 public:
     Capitan(float x, float y, Aprendizaje *memoria = nullptr);
     ~Capitan() override;
 
-    void  actualizar(float dt) override;
-    short clase() const override { return CLASE_CAPITAN; }
+    void actualizar(float dt) override;
+    short clase() const override;
     short estadoVisual() const override;
-    void  alChocar(Entidad &otra) override;
-    void  recibirDanio(float danio) override;
+    bool esSolida() const override;
+    void alChocar(Entidad &otra) override;
+    void recibirDanio(float cantidad) override;
 
     void ciclo(const Rocket *r, float dt);
     void actualizarFase();
 
-    bool  golpeaA(const Rocket *r);
-    bool  consumirOrdenCanon(float &objX, float &objY);
-    bool  consumirCambioFase();
+    bool alcanzaA(const Rocket *r) const;
+    void confirmarGolpe();
+    bool consumirOrdenCanon(float &objX, float &objY);
+    bool consumirCambioFase();
     short consumirInicioAccion();
-    void  resultadoCanon(bool acerto);
-    void  fijarCanonDisponible(bool disponible);
-    void  fijarLimites(float minimoX, float maximoX);
+    void resultadoCanon(bool acerto);
+    void fijarCanonDisponible(bool disponible);
 
     void fijarRetrasoPercepcion(float segundos);
     void fijarAgresividad(float a);
     void fijarTasaAprendizaje(float t);
     void fijarVelocidadAtaques(float factor);
 
-    short getFase() const { return fase; }
-    bool  estaDerrotado() const { return derrotado; }
-    float getVidaMax() const { return vidaMax; }
+    short getFase() const;
+    bool estaDerrotado() const;
+    float getVidaMax() const;
     short accionActual() const;
-    float avanceAccion() const { return accion.getAvance(); }
-    bool  giratorioActivo() const;
-    void  posicionGiratorio(float &gx, float &gy) const;
-    bool  trombaActiva() const;
+    float avanceAccion() const;
+    bool giratorioActivo() const;
+    void posicionGiratorio(float &gx, float &gy) const;
+    bool trombaActiva() const;
     float radioTromba() const;
-    const Aprendizaje *memoria() const { return aprendizaje; }
-    const Percepcion &verPercepcion() const { return percepcion; }
-
-private:
-    void iniciarAccion(short a, const Rocket *r);
-    void finalizarAccion();
-    void moverse(float dt);
-
-    Aprendizaje *aprendizaje;
-    bool         duenoAprendizaje;
-    Percepcion   percepcion;
-    Razonamiento razonamiento;
-    Accion       accion;
-
-    short fase;
-    float vidaMax;
-    float acumulador;
-    float descanso;
-    float tiempoAlto, tiempoLejos;
-    short estimuloPrevio;
-    bool  resultadoReportado;
-    bool  yaGolpeo;
-    bool  ordenCanon;
-    float canonX, canonY;
-    bool  cambioFase;
-    short inicioAccion;
-    MovCircular *giro;
-    float minX, maxX;
-    float factorVelocidad;
-    bool  derrotado;
+    const Aprendizaje *memoria() const;
+    const Percepcion &verPercepcion() const;
 };
 
 #endif

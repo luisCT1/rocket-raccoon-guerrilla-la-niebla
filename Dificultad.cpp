@@ -8,10 +8,10 @@ static const float TASA[3]        = { 0.10f, 0.20f, 0.35f };
 static const float AGRESIVIDAD[3] = { 0.80f, 1.00f, 1.30f };
 static const float VELOCIDAD[3]   = { 0.75f, 1.00f, 1.35f };
 
-Dificultad::Dificultad(short nivel)
+Dificultad::Dificultad(short nivelInicial)
     : nivel(DIF_NORMAL), retrasoPercepcion(0.0f), tasaAprendizaje(0.0f), agresividad(0.0f), velocidadAtaques(0.0f)
 {
-    fijar(nivel);
+    fijar(nivelInicial);
 }
 
 void Dificultad::fijar(short n)

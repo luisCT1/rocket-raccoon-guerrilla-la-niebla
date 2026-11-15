@@ -1,0 +1,2 @@
+sprites/   PNG con transparencia. Nombre = el de la lista (rocket_quieto.png, fondo1.png...). Si falta uno se ve un bloque de color.
+audio/     WAV: musica.wav (bucle), disparo.wav, explosion.wav, golpe.wav, alarma.wav, victoria.wav, derrota.wav.
