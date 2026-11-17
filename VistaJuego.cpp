@@ -26,6 +26,7 @@
 namespace {
 constexpr float ANCHO_VISTA_LATERAL = 1280.f;
 constexpr int PERIODO_MS = 16;
+constexpr float FPS_SPRITES = 8.f;
 
 QPointF posicionRaton(const QMouseEvent *e) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -57,7 +58,7 @@ const char *nombreEstructura(short tipo) {
 }
 
 VistaJuego::VistaJuego(Sprites *sp, Sonido *so, QWidget *padre)
-    : QWidget(padre), sprites(sp), sonido(so), estado(JUGANDO), campania(false), botonIzq(false),
+    : QWidget(padre), sprites(sp), sonido(so), estado(JUGANDO), campania(false), botonIzq(false), tAnim(0.f),
       esc(1.f), offX(0.f), offY(0.f), visAncho(1280.f), visAlto(720.f) {
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -73,6 +74,7 @@ void VistaJuego::iniciar(short nivel, short dificultad, bool esCampania) {
     botonIzq = false;
     teclas.clear();
     eventos.clear();
+    limpiarEfectos();
     cronometro.start();
     reloj.start(PERIODO_MS);
     sonido->iniciarMusica();
@@ -94,9 +96,58 @@ void VistaJuego::cuadro() {
         juego.actualizar(dt);
         n->tomarEventos(eventos);
         sonido->procesarEventos(eventos);
+        detectarEfectos(n);
+        for (Efecto &ef : efectos) ef.t += std::min(dt, 0.05f);
+        efectos.erase(std::remove_if(efectos.begin(), efectos.end(),
+                                     [](const Efecto &ef) { return ef.t >= ef.duracion; }),
+                      efectos.end());
         if (n->estaTerminado()) estado = FIN;
     }
     update();
+}
+
+void VistaJuego::limpiarEfectos() {
+    efectos.clear();
+    yaDestruidas.clear();
+}
+
+void VistaJuego::agregarEfecto(float x, float y, float radio, const QString &nombre, float duracion) {
+    if (efectos.size() < 64) efectos.push_back({x, y, radio, 0.f, duracion, nombre});
+}
+
+void VistaJuego::detectarEfectos(Nivel *n) {
+    for (const Entidad *e : n->obtenerEntidades()) {
+        if (e->clase() == CLASE_PROYECTIL) {
+            const Proyectil *pr = static_cast<const Proyectil *>(e);
+            if (pr->yaExplotado() && pr->getRadioExplosion() > 0.f)
+                agregarEfecto(pr->getCentroX(), pr->getCentroY(), pr->getRadioExplosion(), "explosion", 0.5f);
+        } else if (e->clase() == CLASE_ESTRUCTURA) {
+            const Estructura *es = static_cast<const Estructura *>(e);
+            if (es->estaDestruida() && !yaDestruidas.contains(es)) {
+                yaDestruidas.insert(es);
+                agregarEfecto(es->getCentroX(), es->getCentroY(), std::max(es->getAncho(), es->getAlto()) * 0.8f,
+                              "explosion", 0.6f);
+            }
+        }
+    }
+}
+
+void VistaJuego::dibujarEfectos(QPainter &p) {
+    for (const Efecto &ef : efectos) {
+        const float avance = ef.t / ef.duracion;
+        const QRectF r(ef.x - ef.radio, ef.y - ef.radio, ef.radio * 2.f, ef.radio * 2.f);
+        const int n = sprites->contarFrames(ef.nombre);
+        const QPixmap *img = n > 0 ? sprites->obtenerAnimado(ef.nombre, ef.t, n / ef.duracion, true)
+                                   : sprites->obtener(ef.nombre);
+        if (img) {
+            p.drawPixmap(r, *img, QRectF(img->rect()));
+        } else {
+            p.setPen(Qt::NoPen);
+            p.setBrush(QColor(255, 170, 40, static_cast<int>(200.f * (1.f - avance))));
+            const float k = 0.4f + 0.6f * avance;
+            p.drawEllipse(QPointF(ef.x, ef.y), ef.radio * k, ef.radio * k);
+        }
+    }
 }
 
 void VistaJuego::procesarEntrada() {
@@ -154,6 +205,7 @@ void VistaJuego::keyPressEvent(QKeyEvent *e) {
             if (n->fueGanado() && e->key() != Qt::Key_R) {
                 if (campania && juego.getNivelActual() < NIVEL_PENON) {
                     juego.siguienteNivel();
+                    limpiarEfectos();
                     estado = JUGANDO;
                     cronometro.restart();
                 } else {
@@ -162,6 +214,7 @@ void VistaJuego::keyPressEvent(QKeyEvent *e) {
                 }
             } else {
                 juego.reiniciarNivel();
+                limpiarEfectos();
                 estado = JUGANDO;
                 cronometro.restart();
             }
@@ -220,6 +273,7 @@ void VistaJuego::paintEvent(QPaintEvent *) {
     if (!n) return;
 
     p.setRenderHint(QPainter::SmoothPixmapTransform);
+    tAnim = n->tiempoTranscurrido();
     calcularVista();
 
     p.save();
@@ -247,7 +301,7 @@ void VistaJuego::paintEvent(QPaintEvent *) {
 
 void VistaJuego::dibujarSprite(QPainter &p, const QString &nombre, const QRectF &r, bool voltear,
                                const QColor &color, bool redondo) {
-    const QPixmap *img = sprites->obtener(nombre);
+    const QPixmap *img = sprites->obtenerAnimado(nombre, tAnim, FPS_SPRITES);
     if (img) {
         if (voltear) {
             p.save();
@@ -302,6 +356,7 @@ void VistaJuego::dibujarMundo(QPainter &p) {
         if (e->estaViva() && e->clase() != CLASE_ESTRUCTURA && e->clase() != CLASE_ROCKET) dibujarEntidad(p, e);
     for (const Entidad *e : ents)
         if (e->estaViva() && e->clase() == CLASE_ROCKET) dibujarEntidad(p, e);
+    dibujarEfectos(p);
 }
 
 void VistaJuego::dibujarEntidad(QPainter &p, const Entidad *e) {
@@ -390,14 +445,26 @@ void VistaJuego::dibujarExtras(QPainter &p, Nivel *n) {
         if (c && !c->estaDerrotado()) {
             if (c->trombaActiva()) {
                 const float rt = c->radioTromba();
-                p.setBrush(QColor(200, 210, 230, 90));
-                p.drawEllipse(QPointF(c->getCentroX(), c->getCentroY()), rt, rt);
+                const QPixmap *img = sprites->obtenerAnimado("tromba", tAnim, FPS_SPRITES);
+                const QRectF area(c->getCentroX() - rt, c->getCentroY() - rt, rt * 2, rt * 2);
+                if (img) {
+                    p.drawPixmap(area, *img, QRectF(img->rect()));
+                } else {
+                    p.setBrush(QColor(200, 210, 230, 90));
+                    p.drawEllipse(area);
+                }
             }
             if (c->giratorioActivo()) {
                 float gx = 0.f, gy = 0.f;
                 c->posicionGiratorio(gx, gy);
-                p.setBrush(QColor(230, 120, 40, 200));
-                p.drawEllipse(QPointF(gx, gy), 22.0, 22.0);
+                const QPixmap *img = sprites->obtenerAnimado("giratorio", tAnim, FPS_SPRITES);
+                const QRectF area(gx - 22.0, gy - 22.0, 44.0, 44.0);
+                if (img) {
+                    p.drawPixmap(area, *img, QRectF(img->rect()));
+                } else {
+                    p.setBrush(QColor(230, 120, 40, 200));
+                    p.drawEllipse(area);
+                }
             }
         }
     }

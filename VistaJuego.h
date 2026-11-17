@@ -4,6 +4,7 @@
 #include <QElapsedTimer>
 #include <QPointF>
 #include <QSet>
+#include <QString>
 #include <QTimer>
 #include <QWidget>
 #include <vector>
@@ -14,6 +15,7 @@ class Sprites;
 class Sonido;
 class Entidad;
 class Nivel;
+class Estructura;
 
 class VistaJuego : public QWidget {
     Q_OBJECT
@@ -31,6 +33,19 @@ private:
     bool campania;
     bool botonIzq;
     QPointF raton;
+
+    struct Efecto {
+        float x, y, radio, t, duracion;
+        QString nombre;
+    };
+    std::vector<Efecto> efectos;
+    QSet<const Estructura *> yaDestruidas;
+    float tAnim;
+
+    void agregarEfecto(float x, float y, float radio, const QString &nombre, float duracion);
+    void detectarEfectos(Nivel *n);
+    void limpiarEfectos();
+    void dibujarEfectos(QPainter &p);
 
     float esc, offX, offY, visAncho, visAlto;
 
