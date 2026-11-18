@@ -4,13 +4,11 @@
 #include <string>
 #include <vector>
 
-//Pasa de un frame a otro según las rutas de los sprites.
-
 class Animacion {
 private:
     std::vector<std::string> rutas;
     short frameActual;
-    float velocidad; //frames por segundo
+    float velocidad;
     float acumulado;
     bool repetir;
 

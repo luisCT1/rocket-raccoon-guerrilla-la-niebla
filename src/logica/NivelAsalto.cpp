@@ -1,82 +1,173 @@
 #include "NivelAsalto.h"
 #include "Rocket.h"
 #include "Enemigo.h"
+#include "Estructura.h"
+#include "Proyectil.h"
+#include "Eventos.h"
+
+namespace {
+constexpr float ANCHO_MUNDO = 1600.f;
+constexpr float ALTO_MUNDO = 1200.f;
+constexpr float TIEMPO_LIMITE = 150.f;
+constexpr float INICIO_X = 126.f;
+constexpr float INICIO_Y = 1018.f;
+constexpr float SALIDA_X = 150.f;
+constexpr float SALIDA_Y = 1050.f;
+constexpr float SALIDA_RADIO = 70.f;
+constexpr float POLVORIN_X = 1250.f, POLVORIN_Y = 250.f;
+constexpr float BANDERA_X = 785.f, BANDERA_Y = 210.f;
+constexpr float CANON_X = 1215.f, CANON_Y = 875.f;
+const float TORRE_X[2] = { 470.f, 1020.f };
+const float TORRE_Y[2] = { 570.f, 620.f };
+const float TORRE_OMEGA[2] = { 0.9f, -0.9f };
+
+constexpr float ALCANCE_CANON = 500.f;
+constexpr float ENFRIAMIENTO_ALARMA = 6.f;
+constexpr short REFUERZOS_POR_OLEADA = 2;
+constexpr short MAX_SOLDADOS = 6;
+constexpr float VISION_ALERTA = 2500.f;
+constexpr short NUM_PUNTOS = 4;
+const float PUNTO_X[NUM_PUNTOS] = { 780.f, 1520.f, 40.f, 1520.f };
+const float PUNTO_Y[NUM_PUNTOS] = { 30.f, 570.f, 270.f, 1100.f };
+}
 
 NivelAsalto::NivelAsalto()
-    : tiempoLimite(150.f),
-      tiempoRestante(150.f),
+    : tiempoLimite(TIEMPO_LIMITE),
+      tiempoRestante(TIEMPO_LIMITE),
       tareasHechas(0),
       polvorinVolado(false),
       banderaTumbada(false),
-      canonInutilizado(false) {
-    agregarEntidad(new Rocket(100.f, 300.f));
+      canonInutilizado(false),
+      polvorin(nullptr),
+      bandera(nullptr),
+      canon(nullptr),
+      enfriamientoAlarma(0.f),
+      siguientePunto(0) {
+    anchoMundo = ANCHO_MUNDO;
+    altoMundo = ALTO_MUNDO;
+    cenital = true;
+
+    agregarEntidad(new Rocket(INICIO_X, INICIO_Y));
+
+    polvorin = new Estructura(EST_POLVORIN, POLVORIN_X, POLVORIN_Y);
+    agregarEntidad(polvorin);
+    bandera = new Estructura(EST_BANDERA, BANDERA_X, BANDERA_Y);
+    agregarEntidad(bandera);
+    canon = new Estructura(EST_CANON, CANON_X, CANON_Y);
+    agregarEntidad(canon);
+
+    torres.reserve(2);
+    for (short i = 0; i < 2; ++i) {
+        Estructura *t = new Estructura(EST_TORRE, TORRE_X[i], TORRE_Y[i]);
+        t->fijarVelocidadGiro(TORRE_OMEGA[i]);
+        agregarEntidad(t);
+        torres.push_back(t);
+    }
 }
 
 NivelAsalto::~NivelAsalto() {}
 
+void NivelAsalto::actualizar(float dt) {
+    if (terminado) return;
+    Nivel::actualizar(dt);
+
+    actualizarReloj(dt);
+    if (terminado) return;
+
+    revisarTareas();
+
+    if (canon->listaParaDisparar()) {
+        const float dx = rocket->getCentroX() - canon->getCentroX();
+        const float dy = rocket->getCentroY() - canon->getCentroY();
+        if (dx * dx + dy * dy <= ALCANCE_CANON * ALCANCE_CANON) {
+            Proyectil *p = canon->disparar(rocket->getCentroX(), rocket->getCentroY());
+            if (p) {
+                agregarEntidad(p);
+                emitirEvento(EV_CANON_DISPARA);
+            }
+        }
+    }
+
+    if (enfriamientoAlarma > 0.f) enfriamientoAlarma -= dt;
+    if (enfriamientoAlarma <= 0.f) {
+        for (Estructura *t : torres) {
+            if (t->detecta(rocket)) {
+                emitirEvento(EV_ALARMA);
+                generarRefuerzos();
+                enfriamientoAlarma = ENFRIAMIENTO_ALARMA;
+                break;
+            }
+        }
+    }
+
+    if (rocket->getVidas() <= 0) terminar(false);
+    else if (tareasCompletas() && rocketEnSalida()) terminar(true);
+}
+
 void NivelAsalto::actualizarReloj(float dt) {
+    if (terminado) return;
     tiempoRestante -= dt;
-    if (tiempoRestante < 0.f) tiempoRestante = 0.f;
+    if (tiempoRestante <= 0.f) {
+        tiempoRestante = 0.f;
+        terminar(false);
+    }
+}
+
+void NivelAsalto::revisarTareas() {
+    const short antes = tareasHechas;
+    if (!polvorinVolado && polvorin->estaDestruida()) {
+        polvorinVolado = true;
+        ++tareasHechas;
+        emitirEvento(EV_EXPLOSION);
+    }
+    if (!banderaTumbada && bandera->estaDestruida()) {
+        banderaTumbada = true;
+        ++tareasHechas;
+    }
+    if (!canonInutilizado && canon->estaDestruida()) {
+        canonInutilizado = true;
+        ++tareasHechas;
+        emitirEvento(EV_EXPLOSION);
+    }
+    for (short i = antes; i < tareasHechas; ++i) {
+        emitirEvento(EV_TAREA_COMPLETADA);
+        generarRefuerzos();
+    }
 }
 
 void NivelAsalto::generarRefuerzos() {
-    if (!rocket) return;
-    agregarEntidad(new Enemigo(rocket->getX() + 250.f, rocket->getY()));
-}
-
-void NivelAsalto::marcarPolvorin() {
-    if (polvorinVolado) return;
-    polvorinVolado = true;
-    ++tareasHechas;
-    generarRefuerzos();
-    emitirEvento(201);
-}
-
-void NivelAsalto::marcarBandera() {
-    if (banderaTumbada) return;
-    banderaTumbada = true;
-    ++tareasHechas;
-    generarRefuerzos();
-    emitirEvento(202);
-}
-
-void NivelAsalto::marcarCanon() {
-    if (canonInutilizado) return;
-    canonInutilizado = true;
-    ++tareasHechas;
-    generarRefuerzos();
-    emitirEvento(203);
+    short vivos = contarVivos(CLASE_ENEMIGO);
+    for (short i = 0; i < REFUERZOS_POR_OLEADA && vivos < MAX_SOLDADOS; ++i, ++vivos) {
+        Enemigo *s = new Enemigo(PUNTO_X[siguientePunto], PUNTO_Y[siguientePunto]);
+        s->fijarAlcanceVision(VISION_ALERTA);
+        agregarEntidad(s);
+        siguientePunto = static_cast<short>((siguientePunto + 1) % NUM_PUNTOS);
+    }
 }
 
 bool NivelAsalto::tareasCompletas() const {
     return polvorinVolado && banderaTumbada && canonInutilizado;
 }
 
-void NivelAsalto::actualizar(float dt) {
-    if (terminado) return;
-    tiempo += dt;
-    actualizarReloj(dt);
-
-    for (Entidad *e : entidades) {
-        if (e) e->actualizar(dt);
-    }
-
-    colisiones();
-    eliminarMuertas();
-
-    if (victoria() || derrota()) {
-        terminado = true;
-        ganado = victoria();
-    }
+bool NivelAsalto::rocketEnSalida() const {
+    const float dx = rocket->getCentroX() - SALIDA_X;
+    const float dy = rocket->getCentroY() - SALIDA_Y;
+    return dx * dx + dy * dy <= SALIDA_RADIO * SALIDA_RADIO;
 }
 
-bool NivelAsalto::victoria() {
-    //Después metemos la zona de salida; por ahora basta con las tres tareas
-    return tareasCompletas();
-}
+bool NivelAsalto::victoria() const { return terminado && ganado; }
+bool NivelAsalto::derrota() const { return terminado && !ganado; }
 
-bool NivelAsalto::derrota() {
-    if (tiempoRestante <= 0.f) return true;
-    if (!rocket) return true;
-    return !rocket->estaViva() || rocket->getVidas() <= 0;
-}
+float NivelAsalto::getTiempoRestante() const { return tiempoRestante; }
+float NivelAsalto::getTiempoLimite() const { return tiempoLimite; }
+short NivelAsalto::getTareasHechas() const { return tareasHechas; }
+bool NivelAsalto::estaPolvorinVolado() const { return polvorinVolado; }
+bool NivelAsalto::estaBanderaTumbada() const { return banderaTumbada; }
+bool NivelAsalto::estaCanonInutilizado() const { return canonInutilizado; }
+float NivelAsalto::getSalidaX() const { return SALIDA_X; }
+float NivelAsalto::getSalidaY() const { return SALIDA_Y; }
+float NivelAsalto::getSalidaRadio() const { return SALIDA_RADIO; }
+Estructura *NivelAsalto::getPolvorin() const { return polvorin; }
+Estructura *NivelAsalto::getBandera() const { return bandera; }
+Estructura *NivelAsalto::getCanon() const { return canon; }
+const std::vector<Estructura *> &NivelAsalto::getTorres() const { return torres; }

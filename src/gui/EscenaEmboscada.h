@@ -1,153 +1,117 @@
 #ifndef ESCENA_EMBOSCADA_H
 #define ESCENA_EMBOSCADA_H
 
-#include <QGraphicsEllipseItem>
-#include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
+#include <QHash>
+#include <QImage>
+#include <QPixmap>
+#include <QPoint>
 #include <QSet>
 #include <QVector>
 
-//Nivel 1 en pantalla: fondo fijo, puente que oscila y el mapache con sus animaciones.
+class QGraphicsItem;
+class QGraphicsPixmapItem;
+class Entidad;
+class Juego;
+class NivelEmboscada;
 
 class EscenaEmboscada : public QGraphicsScene {
 public:
     EscenaEmboscada();
+    ~EscenaEmboscada() override;
 
     void pulsar(int tecla);
     void soltar(int tecla);
+    void apuntar(float x, float y);
     void avanzar(float dt);
 
+    QRectF rectCamara() const;
+    QString textoHud() const;
+    QString mensajeFinal() const;
+    int porcentajeVida() const;
+    bool acabo() const;
+    bool gano() const;
+
 private:
-    enum class Pose {
-        Quieto,
-        Camina,
-        Salta,
-        Dispara,
-        Impulso,
-        Furia,
-        Herido,
-        Caido
-    };
-
-    struct Bala {
-        QGraphicsEllipseItem *dibujo = nullptr;
+    struct CapaFondo {
+        QGraphicsItem *dibujo = nullptr;
         float x = 0.f;
         float y = 0.f;
-        float vx = 0.f;
-        float vy = 0.f;
-        float x0 = 0.f;
-        float y0 = 0.f;
+        float avance = 1.f;
+        float deriva = 0.f;
+        float ciclo = 0.f;
+    };
+
+    struct Caida {
+        QGraphicsPixmapItem *item = nullptr;
+        QVector<QPixmap> cuadros;
         float edad = 0.f;
-        bool delJugador = true;
-        bool granada = false;
-        int dano = 1;
-    };
-
-    struct Destello {
-        QGraphicsEllipseItem *dibujo = nullptr;
-        float vida = 0.2f;
-    };
-
-    struct Actor {
-        QGraphicsPixmapItem *dibujo = nullptr;
-        float x = 0.f;
-        float y = 0.f;
-        float vel = -40.f;
-        float anim = 0.f;
-        float poseT = 0.f;
-        float recarga = 0.8f;
-        int vida = 2;
-        int vidaMax = 2;
-        int mira = -1;
-        int tipo = 0;
-        float alto = 130.f;
-        float ancho = 50.f;
-        bool vivo = true;
+        float centro = 0.f;
+        float suelo = 0.f;
+        float alto = 96.f;
     };
 
     void cargarSprites();
-    void ponerMapache();
-    void ponerPuente(float osc);
-    float sueloEn(float x, float osc) const;
-    const QVector<QPixmap> &hojaDe(Pose pose) const;
-    const QVector<int> &piesDe(Pose pose) const;
-    int cuadroPuente() const;
-    float origenXPuente(int cuadro) const;
-    float origenYPuente(int cuadro, float osc) const;
-    void prepararConvoy();
-    void ponerActor(Actor &actor);
-    void avanzarConvoy(float dt, float osc);
-    void dispararFusil();
-    void lanzarGranada();
-    void explotar(float gx, float gy);
-    void herirJugador();
-    bool golpeaActor(const Actor &actor, float bx, float by) const;
-    bool golpeaJugador(float bx, float by) const;
+    void prepararHud(const QPixmap &hoja);
+    void dibujarHud();
+    void armarSuelo();
+    void moverCapas();
+    void sincronizar();
+    void colocar(Entidad *entidad, QGraphicsItem *dibujo);
+    void apoyar(QGraphicsPixmapItem *sprite, const QPixmap &cuadro, float centro, float suelo, float alto);
+    QPixmap cuadroDe(Entidad *entidad) const;
+    bool miraALaIzquierda(Entidad *entidad) const;
 
-    QGraphicsPixmapItem *fondo = nullptr;
-    QGraphicsPixmapItem *puente = nullptr;
-    QGraphicsPixmapItem *mapache = nullptr;
+    Juego *juego = nullptr;
+    NivelEmboscada *nivel = nullptr;
 
-    struct MarcoPuente {
-        QPixmap pix;
-        QVector<int> cubierta;
-        float medio = 0.f;
-        float ancla = 0.f;
-    };
+    QVector<CapaFondo> capas;
+    QHash<Entidad *, QGraphicsItem *> piezas;
+    QVector<QGraphicsItem *> flashes;
+    QVector<float> vidaFlash;
 
     QVector<QPixmap> caminar;
+    QVector<QPixmap> espera;
     QVector<QPixmap> saltar;
     QVector<QPixmap> disparar;
     QVector<QPixmap> impulso;
     QVector<QPixmap> furia;
-    QVector<QPixmap> herido;
-    QVector<QPixmap> caido;
-    QVector<int> piesCaminar;
-    QVector<int> piesSaltar;
-    QVector<int> piesDisparar;
-    QVector<int> piesImpulso;
-    QVector<int> piesFuria;
-    QVector<int> piesHerido;
-    QVector<int> piesCaido;
-    QVector<MarcoPuente> marcosPuente;
-    float escalaPuente = 1.f;
-
+    QVector<QPixmap> lanzar;
     QVector<QPixmap> soldadoCamina;
     QVector<QPixmap> soldadoDispara;
+    QVector<QPixmap> rocketDanio;
+    QVector<QPixmap> rocketMuerte;
     QVector<QPixmap> soldadoMuere;
-    QVector<int> piesSoldadoCamina;
-    QVector<int> piesSoldadoDispara;
-    QVector<int> piesSoldadoMuere;
     QVector<QPixmap> jineteGalope;
     QVector<QPixmap> jineteMuere;
-    QVector<int> piesJineteGalope;
-    QVector<int> piesJineteMuere;
     QVector<QPixmap> carretaRueda;
     QVector<QPixmap> carretaHerida;
     QVector<QPixmap> carretaExplota;
-    QVector<int> piesCarretaRueda;
-    QVector<int> piesCarretaHerida;
-    QVector<int> piesCarretaExplota;
+    QVector<QPixmap> barrilQuieto;
+    QVector<QPixmap> barrilEstalla;
+    QPixmap puenteQuieto;
+
+    QImage panelVidas;
+    QVector<QImage> corazones;
+    QVector<QPoint> posCorazon;
+    QImage barraLlena;
+    QImage barraVacia;
+    QRect rojoBarra;
+    QRect textoBarra;
+    QImage balasLlenas;
+    QImage balasVacias;
+    QVector<QImage> iconosBala;
+    QVector<QPoint> posBala;
+    QRect textoBalas;
+    QGraphicsPixmapItem *marcador = nullptr;
+    QVector<Caida> caidas;
 
     QSet<int> teclas;
-    QVector<Bala> balas;
-    QVector<Actor> convoy;
-    QVector<Destello> destellos;
-
-    Pose pose = Pose::Quieto;
-    float x = 300.f;
-    float y = 620.f;
-    float vy = 0.f;
     float tiempo = 0.f;
-    float anim = 0.f;
-    float poseTimer = 0.f;
-    float furiaTimer = 0.f;
-    float recargaDisparo = 0.f;
-    float invulnerable = 0.f;
-    int mira = 1;
-    int vidas = 3;
-    int granadas = 5;
-    bool enAire = false;
-    bool vivo = true;
+    float granadaMuestra = 0.f;
+    float punteroX = 0.f;
+    float punteroY = 0.f;
+    bool hayApunte = false;
 };
+
 #endif
