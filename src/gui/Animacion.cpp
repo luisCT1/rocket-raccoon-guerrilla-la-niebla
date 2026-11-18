@@ -11,10 +11,8 @@ void Animacion::avanzar(float dt) {
     while (acumulado >= periodo) {
         acumulado -= periodo;
         ++frameActual;
-        if (frameActual >= static_cast<short>(rutas.size())) {
-            //Si no se repite, se queda en el último frame
+        if (frameActual >= static_cast<short>(rutas.size()))
             frameActual = repetir ? 0 : static_cast<short>(rutas.size() - 1);
-        }
     }
 }
 

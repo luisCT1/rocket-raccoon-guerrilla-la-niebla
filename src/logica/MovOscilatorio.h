@@ -3,7 +3,9 @@
 
 #include "ModeloFisico.h"
 
-//Vaivén para puentes o plataformas. Todavía no está en el .pro actual, pero queda listo.
+// Vaivén para el puente y las plataformas.
+//   s(t) = centro + amplitud * sen(omega*t + fase)
+// Oscila en un solo eje; la otra coordenada queda fija.
 
 class MovOscilatorio : public ModeloFisico {
 private:
@@ -13,13 +15,16 @@ private:
     float fase;
     bool vertical;
     float fijo;
+    float valor; //s(t) del cuadro actual
 
 public:
-    MovOscilatorio(float centro, float amplitud, float omega, float fase, bool vertical);
+    //Lanza std::invalid_argument si la amplitud es negativa
+    MovOscilatorio(float centro, float amplitud, float omega, float fase, bool vertical, float fijo = 0.f);
 
     void setCoordenadaFija(float valor);
     void avanzar(float dt) override;
-    void posicion(float &outX, float &outY) override;
+    void posicion(float &outX, float &outY) const override;
+    void reiniciar() override;
 };
 
 #endif

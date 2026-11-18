@@ -2,8 +2,9 @@
 #define NIVEL_ASALTO_H
 
 #include "Nivel.h"
+#include <vector>
 
-//Nivel 2. Asalto con reloj y las tres tareas del campamento.
+class Estructura;
 
 class NivelAsalto : public Nivel {
 private:
@@ -14,21 +15,41 @@ private:
     bool banderaTumbada;
     bool canonInutilizado;
 
+    Estructura *polvorin;
+    Estructura *bandera;
+    Estructura *canon;
+    std::vector<Estructura *> torres;
+    float enfriamientoAlarma;
+    short siguientePunto;
+
+    void revisarTareas();
+    bool rocketEnSalida() const;
+
 public:
     NivelAsalto();
     ~NivelAsalto() override;
 
     void actualizar(float dt) override;
-    bool victoria() override;
-    bool derrota() override;
+    bool victoria() const override;
+    bool derrota() const override;
 
     void actualizarReloj(float dt);
     void generarRefuerzos();
     bool tareasCompletas() const;
 
-    void marcarPolvorin();
-    void marcarBandera();
-    void marcarCanon();
+    float getTiempoRestante() const;
+    float getTiempoLimite() const;
+    short getTareasHechas() const;
+    bool estaPolvorinVolado() const;
+    bool estaBanderaTumbada() const;
+    bool estaCanonInutilizado() const;
+    float getSalidaX() const;
+    float getSalidaY() const;
+    float getSalidaRadio() const;
+    Estructura *getPolvorin() const;
+    Estructura *getBandera() const;
+    Estructura *getCanon() const;
+    const std::vector<Estructura *> &getTorres() const;
 };
 
 #endif
