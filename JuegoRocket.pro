@@ -4,10 +4,9 @@ TARGET = JuegoRocket
 TEMPLATE = app
 
 HEADERS += \
-Accion.h \
+Agente.h \
 AgenteTipos.h \
 Animacion.h \
-Aprendizaje.h \
 Capitan.h \
 Dificultad.h \
 Enemigo.h \
@@ -24,9 +23,7 @@ Nivel.h \
 NivelAsalto.h \
 NivelEmboscada.h \
 NivelPenon.h \
-Percepcion.h \
 Proyectil.h \
-Razonamiento.h \
 Rocket.h \
 Sonido.h \
 Sprites.h \
@@ -34,9 +31,8 @@ VentanaPrincipal.h \
 VistaJuego.h
 
 SOURCES += \
-Accion.cpp \
+Agente.cpp \
 Animacion.cpp \
-Aprendizaje.cpp \
 Capitan.cpp \
 Dificultad.cpp \
 Enemigo.cpp \
@@ -52,9 +48,7 @@ Nivel.cpp \
 NivelAsalto.cpp \
 NivelEmboscada.cpp \
 NivelPenon.cpp \
-Percepcion.cpp \
 Proyectil.cpp \
-Razonamiento.cpp \
 Rocket.cpp \
 Sonido.cpp \
 Sprites.cpp \

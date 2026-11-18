@@ -3,28 +3,19 @@
 
 #include "Enemigo.h"
 #include "AgenteTipos.h"
-#include "Percepcion.h"
-#include "Razonamiento.h"
-#include "Accion.h"
+#include "Agente.h"
 
-class Aprendizaje;
 class MovCircular;
 
 class Capitan : public Enemigo {
 private:
-    Aprendizaje *aprendizaje;
-    bool duenoAprendizaje;
-    Percepcion percepcion;
-    Razonamiento razonamiento;
-    Accion accion;
+    Agente *agente;
+    bool duenoAgente;
 
     short fase;
     float vidaMax;
     float acumulador;
     float descanso;
-    float tiempoAlto;
-    float tiempoLejos;
-    short estimuloPrevio;
     bool resultadoReportado;
     bool yaGolpeo;
     bool ordenCanon;
@@ -41,7 +32,7 @@ private:
     void moverse(float dt);
 
 public:
-    Capitan(float x, float y, Aprendizaje *memoria = nullptr);
+    Capitan(float x, float y, Agente *agente = nullptr);
     ~Capitan() override;
 
     void actualizar(float dt) override;
@@ -76,8 +67,7 @@ public:
     void posicionGiratorio(float &gx, float &gy) const;
     bool trombaActiva() const;
     float radioTromba() const;
-    const Aprendizaje *memoria() const;
-    const Percepcion &verPercepcion() const;
+    const Agente *verAgente() const;
 };
 
 #endif

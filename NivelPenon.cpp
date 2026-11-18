@@ -27,7 +27,7 @@ constexpr float BANDERA_Y = 408.f;
 constexpr float BANDERA_RADIO = 60.f;
 }
 
-NivelPenon::NivelPenon(short nivelDificultad, Aprendizaje *memoria)
+NivelPenon::NivelPenon(short nivelDificultad, Agente *agente)
     : capitan(nullptr), dificultad(nivelDificultad), banderaPuesta(false), canon(nullptr), canonAvisado(false) {
     anchoMundo = ANCHO_MUNDO;
     altoMundo = ALTO_MUNDO;
@@ -54,7 +54,7 @@ NivelPenon::NivelPenon(short nivelDificultad, Aprendizaje *memoria)
     canon->setPosicion(CANON_X, SUELO - canon->getAlto());
     agregarEntidad(canon);
 
-    capitan = new Capitan(CAPITAN_X, 0.f, memoria);
+    capitan = new Capitan(CAPITAN_X, 0.f, agente);
     capitan->setPosicion(CAPITAN_X, SUELO - capitan->getAlto());
     agregarEntidad(capitan);
     capitan->fijarLimites(LIMITE_IZQ, LIMITE_DER);

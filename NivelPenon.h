@@ -8,7 +8,7 @@
 class Capitan;
 class Estructura;
 class Proyectil;
-class Aprendizaje;
+class Agente;
 
 class NivelPenon : public Nivel {
 private:
@@ -25,7 +25,7 @@ protected:
     void alBorrar(Entidad *e) override;
 
 public:
-    explicit NivelPenon(short dificultad, Aprendizaje *memoria = nullptr);
+    explicit NivelPenon(short dificultad, Agente *agente = nullptr);
     ~NivelPenon() override;
 
     void actualizar(float dt) override;
