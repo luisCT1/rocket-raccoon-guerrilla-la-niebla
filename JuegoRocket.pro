@@ -4,11 +4,9 @@ TARGET = JuegoRocket
 TEMPLATE = app
 
 HEADERS += \
-Agente.h \
 AgenteTipos.h \
 Animacion.h \
 Capitan.h \
-Dificultad.h \
 Enemigo.h \
 Entidad.h \
 Estructura.h \
@@ -31,10 +29,8 @@ VentanaPrincipal.h \
 VistaJuego.h
 
 SOURCES += \
-Agente.cpp \
 Animacion.cpp \
 Capitan.cpp \
-Dificultad.cpp \
 Enemigo.cpp \
 Entidad.cpp \
 Estructura.cpp \

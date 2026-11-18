@@ -27,7 +27,7 @@ constexpr float BANDERA_Y = 408.f;
 constexpr float BANDERA_RADIO = 60.f;
 }
 
-NivelPenon::NivelPenon(short nivelDificultad, Agente *agente)
+NivelPenon::NivelPenon(short nivelDificultad, Capitan::Memoria *memoria)
     : capitan(nullptr), dificultad(nivelDificultad), banderaPuesta(false), canon(nullptr), canonAvisado(false) {
     anchoMundo = ANCHO_MUNDO;
     altoMundo = ALTO_MUNDO;
@@ -54,11 +54,11 @@ NivelPenon::NivelPenon(short nivelDificultad, Agente *agente)
     canon->setPosicion(CANON_X, SUELO - canon->getAlto());
     agregarEntidad(canon);
 
-    capitan = new Capitan(CAPITAN_X, 0.f, agente);
+    capitan = new Capitan(CAPITAN_X, 0.f, memoria);
     capitan->setPosicion(CAPITAN_X, SUELO - capitan->getAlto());
     agregarEntidad(capitan);
     capitan->fijarLimites(LIMITE_IZQ, LIMITE_DER);
-    dificultad.aplicar(capitan);
+    capitan->fijarDificultad(dificultad);
 }
 
 NivelPenon::~NivelPenon() {}
@@ -144,7 +144,7 @@ bool NivelPenon::derrota() const { return terminado && !ganado; }
 
 Capitan *NivelPenon::getCapitan() const { return capitan; }
 Estructura *NivelPenon::getCanon() const { return canon; }
-const Dificultad &NivelPenon::getDificultad() const { return dificultad; }
+short NivelPenon::getDificultad() const { return dificultad; }
 bool NivelPenon::estaBanderaPuesta() const { return banderaPuesta; }
 float NivelPenon::getBanderaX() const { return BANDERA_X; }
 float NivelPenon::getBanderaY() const { return BANDERA_Y; }

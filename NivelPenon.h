@@ -2,18 +2,16 @@
 #define NIVEL_PENON_H
 
 #include "Nivel.h"
-#include "Dificultad.h"
+#include "Capitan.h"
 #include <vector>
 
-class Capitan;
 class Estructura;
 class Proyectil;
-class Agente;
 
 class NivelPenon : public Nivel {
 private:
     Capitan *capitan;
-    Dificultad dificultad;
+    short dificultad;
     bool banderaPuesta;
     Estructura *canon;
     std::vector<Proyectil *> disparosCanon;
@@ -25,7 +23,7 @@ protected:
     void alBorrar(Entidad *e) override;
 
 public:
-    explicit NivelPenon(short dificultad, Agente *agente = nullptr);
+    explicit NivelPenon(short dificultad, Capitan::Memoria *memoria = nullptr);
     ~NivelPenon() override;
 
     void actualizar(float dt) override;
@@ -37,7 +35,7 @@ public:
 
     Capitan *getCapitan() const;
     Estructura *getCanon() const;
-    const Dificultad &getDificultad() const;
+    short getDificultad() const;
     bool estaBanderaPuesta() const;
     float getBanderaX() const;
     float getBanderaY() const;

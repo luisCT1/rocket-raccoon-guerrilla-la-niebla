@@ -3,15 +3,22 @@
 
 #include "Enemigo.h"
 #include "AgenteTipos.h"
-#include "Agente.h"
+#include <array>
 
 class MovCircular;
 
 class Capitan : public Enemigo {
-private:
-    Agente *agente;
-    bool duenoAgente;
+public:
+    struct Memoria {
+        std::array<short, HAB_NUM> conteoHabitos;
+        std::array<float, ACC_NUM> pesosAccion;
+        std::array<float, ACC_NUM> bonoAccion;
+        Memoria();
+    };
 
+    static constexpr float NO_DISPONIBLE = -1000.0f;
+
+private:
     short fase;
     float vidaMax;
     float acumulador;
@@ -27,12 +34,40 @@ private:
     float factorVelocidad;
     bool derrotado;
 
-    void iniciarAccion(short a, const Rocket *r);
+    short estimuloVisible;
+    float intensidadEstimulo;
+    float distanciaRocket;
+    short ladoRocket;
+    bool rocketEnAlto;
+    float radioOido;
+    float retrasoReaccion;
+    short estimuloPendiente;
+    float intensidadPendiente;
+    float esperaReaccion;
+
+    std::array<float, ACC_NUM> recargas;
+    std::array<float, ACC_NUM> sinUsar;
+    std::array<bool, ACC_NUM> bloqueadas;
+    float agresividad;
+    float factorRecarga;
+
+    short idAccion;
+    float accionRestante, accionDuracion;
+    float destinoX, destinoY;
+    bool accionFinalizada, accionAcierto;
+
+    Memoria memoriaPropia;
+    Memoria *memoria;
+    float tasaAprendizaje;
+    short estimuloPrevio;
+    float tiempoAlto, tiempoLejos;
+
     void finalizarAccion();
     void moverse(float dt);
+    void recalcularBonos();
 
 public:
-    Capitan(float x, float y, Agente *agente = nullptr);
+    Capitan(float x, float y, Memoria *memoria = nullptr);
     ~Capitan() override;
 
     void actualizar(float dt) override;
@@ -53,21 +88,55 @@ public:
     void resultadoCanon(bool acerto);
     void fijarCanonDisponible(bool disponible);
 
-    void fijarRetrasoPercepcion(float segundos);
-    void fijarAgresividad(float a);
-    void fijarTasaAprendizaje(float t);
-    void fijarVelocidadAtaques(float factor);
-
     short getFase() const;
     bool estaDerrotado() const;
     float getVidaMax() const;
-    short accionActual() const;
-    float avanceAccion() const;
     bool giratorioActivo() const;
     void posicionGiratorio(float &gx, float &gy) const;
     bool trombaActiva() const;
     float radioTromba() const;
-    const Agente *verAgente() const;
+
+    void fijarDificultad(short nivel);
+
+    void percibir(const Rocket *r, float dt);
+    short estimulo() const;
+    float getIntensidad() const;
+    float getDistancia() const;
+    short lado() const;
+    bool rocketAlto() const;
+    bool dashReciente() const;
+    bool granadaReciente() const;
+    void fijarRetrasoPercepcion(float segundos);
+    void fijarRadioOido(float radio);
+    float getRetrasoPercepcion() const;
+
+    short decidir() const;
+    float puntaje(short accion) const;
+    void iniciarRecarga(short accion);
+    void actualizarRecargas(float dt);
+    bool estaLista(short accion) const;
+    void bloquear(short accion, bool bloqueada);
+    void fijarAgresividad(float a);
+    void fijarVelocidadAtaques(float factor);
+    float getAgresividad() const;
+    float getVelocidadAtaques() const;
+
+    void ejecutarAccion(short accion, const Rocket *r);
+    void actualizarAccion(float dt);
+    bool accionTerminada() const;
+    short accionActual() const;
+    float avanceAccion() const;
+
+    void registrarHabito(short habito);
+    void observarHabitos(float dt);
+    void resultado(short accion, bool acerto);
+    float peso(short accion) const;
+    void fijarTasaAprendizaje(float t);
+    float getTasa() const;
+    short conteo(short habito) const;
+    short habitoDominante() const;
+    void olvidarTodo();
+    const Memoria *verMemoria() const;
 };
 
 #endif
