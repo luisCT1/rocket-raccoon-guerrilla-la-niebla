@@ -20,7 +20,6 @@ public:
 
 private:
 
-    // ---------------- cuerpo
     short fase;
     float vidaMax;
     float acumulador;
@@ -36,7 +35,6 @@ private:
     float factorVelocidad;
     bool derrotado;
 
-    // ---------------- 1) percepción
     short estimuloVisible;
     float intensidadEstimulo;
     float distanciaRocket;
@@ -48,20 +46,17 @@ private:
     float intensidadPendiente;
     float esperaReaccion;
 
-    // ---------------- 2) razonamiento
     std::array<float, ACC_NUM> recargas;
     std::array<float, ACC_NUM> sinUsar;
     std::array<bool, ACC_NUM> bloqueadas;
     float agresividad;
     float factorRecarga;
 
-    // ---------------- 3) acción
     short idAccion;
     float accionRestante, accionDuracion;
     float destinoX, destinoY;
     bool accionFinalizada, accionAcierto;
 
-    // ---------------- 4) aprendizaje
     Memoria memoriaPropia;
     Memoria *memoria;
     float tasaAprendizaje;
@@ -76,7 +71,6 @@ public:
     Capitan(float x, float y, Memoria *memoria = nullptr);
     ~Capitan() override;
 
-    // ================= cuerpo: lo que el nivel y la capa gráfica usan
     void actualizar(float dt) override;
     short clase() const override;
     short estadoVisual() const override;
@@ -105,7 +99,6 @@ public:
 
     void fijarDificultad(short nivel);
 
-    // ================= 1) PERCEPCIÓN
     void percibir(const Rocket *r, float dt);
     short estimulo() const;
     float getIntensidad() const;
@@ -118,7 +111,6 @@ public:
     void fijarRadioOido(float radio);
     float getRetrasoPercepcion() const;
 
-    // ================= 2) RAZONAMIENTO
     short decidir() const;
     float puntaje(short accion) const;
     void iniciarRecarga(short accion);
@@ -130,14 +122,12 @@ public:
     float getAgresividad() const;
     float getVelocidadAtaques() const;
 
-    // ================= 3) ACCIÓN
     void ejecutarAccion(short accion, const Rocket *r);
     void actualizarAccion(float dt);
     bool accionTerminada() const;
     short accionActual() const;
     float avanceAccion() const;
 
-    // ================= 4) APRENDIZAJE
     void registrarHabito(short habito);
     void observarHabitos(float dt);
     void resultado(short accion, bool acerto);

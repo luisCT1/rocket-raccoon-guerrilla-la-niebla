@@ -9,6 +9,7 @@
 #include <cmath>
 
 #include "AgenteTipos.h"
+#include "ArteAsalto.h"
 #include "Capitan.h"
 #include "Enemigo.h"
 #include "Entidad.h"
@@ -58,7 +59,7 @@ const char *nombreEstructura(short tipo) {
 }
 
 VistaJuego::VistaJuego(Sprites *sp, Sonido *so, QWidget *padre)
-    : QWidget(padre), sprites(sp), sonido(so), estado(JUGANDO), campania(false), botonIzq(false), tAnim(0.f),
+    : QWidget(padre), sprites(sp), sonido(so), estado(JUGANDO), campania(false), botonIzq(false), tAnim(0.f), arte(nullptr),
       esc(1.f), offX(0.f), offY(0.f), visAncho(1280.f), visAlto(720.f) {
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
@@ -66,6 +67,8 @@ VistaJuego::VistaJuego(Sprites *sp, Sonido *so, QWidget *padre)
     reloj.setTimerType(Qt::PreciseTimer);
     connect(&reloj, &QTimer::timeout, this, [this] { cuadro(); });
 }
+
+VistaJuego::~VistaJuego() { delete arte; }
 
 void VistaJuego::iniciar(short nivel, short dificultad, bool esCampania) {
     juego.iniciarNivel(nivel, dificultad);
@@ -96,11 +99,18 @@ void VistaJuego::cuadro() {
         juego.actualizar(dt);
         n->tomarEventos(eventos);
         sonido->procesarEventos(eventos);
-        detectarEfectos(n);
-        for (Efecto &ef : efectos) ef.t += std::min(dt, 0.05f);
-        efectos.erase(std::remove_if(efectos.begin(), efectos.end(),
-                                     [](const Efecto &ef) { return ef.t >= ef.duracion; }),
-                      efectos.end());
+        if (juego.getNivelActual() == NIVEL_ASALTO) {
+            if (!arte) arte = new ArteAsalto(sprites);
+            const QPointF m = aMundo(raton);
+            arte->actualizar(static_cast<NivelAsalto *>(n), std::min(dt, 0.05f), static_cast<float>(m.x()),
+                             static_cast<float>(m.y()));
+        } else {
+            detectarEfectos(n);
+            for (Efecto &ef : efectos) ef.t += std::min(dt, 0.05f);
+            efectos.erase(std::remove_if(efectos.begin(), efectos.end(),
+                                         [](const Efecto &ef) { return ef.t >= ef.duracion; }),
+                          efectos.end());
+        }
         if (n->estaTerminado()) estado = FIN;
     }
     update();
@@ -109,6 +119,7 @@ void VistaJuego::cuadro() {
 void VistaJuego::limpiarEfectos() {
     efectos.clear();
     yaDestruidas.clear();
+    if (arte) arte->reiniciar();
 }
 
 void VistaJuego::agregarEfecto(float x, float y, float radio, const QString &nombre, float duracion) {
@@ -346,6 +357,10 @@ void VistaJuego::dibujarFondo(QPainter &p, Nivel *n) {
 
 void VistaJuego::dibujarMundo(QPainter &p) {
     Nivel *n = juego.nivelActivo();
+    if (arte && juego.getNivelActual() == NIVEL_ASALTO) {
+        arte->dibujar(p, static_cast<NivelAsalto *>(n));
+        return;
+    }
     dibujarFondo(p, n);
 
     const std::vector<Entidad *> &ents = n->obtenerEntidades();

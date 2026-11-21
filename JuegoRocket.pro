@@ -5,7 +5,8 @@ TEMPLATE = app
 
 HEADERS += \
 AgenteTipos.h \
-Animacion.h \
+ArteAsalto.h \
+AtlasNivel2.h \
 Capitan.h \
 Enemigo.h \
 Entidad.h \
@@ -29,7 +30,7 @@ VentanaPrincipal.h \
 VistaJuego.h
 
 SOURCES += \
-Animacion.cpp \
+ArteAsalto.cpp \
 Capitan.cpp \
 Enemigo.cpp \
 Entidad.cpp \
@@ -52,5 +53,4 @@ VentanaPrincipal.cpp \
 VistaJuego.cpp \
 main.cpp
 
-# Carpeta con sprites/ y audio/
 DEFINES += RUTA_RECURSOS=\\\"$$PWD/recursos/\\\"

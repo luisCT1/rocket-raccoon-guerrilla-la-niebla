@@ -16,6 +16,7 @@ class Sonido;
 class Entidad;
 class Nivel;
 class Estructura;
+class ArteAsalto;
 
 class VistaJuego : public QWidget {
     Q_OBJECT
@@ -41,6 +42,7 @@ private:
     std::vector<Efecto> efectos;
     QSet<const Estructura *> yaDestruidas;
     float tAnim;
+    ArteAsalto *arte;
 
     void agregarEfecto(float x, float y, float radio, const QString &nombre, float duracion);
     void detectarEfectos(Nivel *n);
@@ -65,6 +67,7 @@ private:
 
 public:
     VistaJuego(Sprites *sp, Sonido *so, QWidget *padre = nullptr);
+    ~VistaJuego() override;
 
     void iniciar(short nivel, short dificultad, bool esCampania);
     void detener();
