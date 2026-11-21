@@ -6,28 +6,27 @@
 class Estructura;
 class Enemigo;
 
-// Nivel 1. Emboscada al convoy. Vista lateral con scroll.
-// Rocket cruza el barranco por el puente colgante, que sube y baja, y destroza las tres carretas.
-// Al caer la última, el correo sale corriendo a avisar: si llega al final del camino, la misión falla.
-// Los barriles de pólvora explotan y se llevan la carreta que tengan al lado.
-
 class NivelEmboscada : public Nivel {
 private:
     float posCamara;
     short partesRestantes;
     bool correoEscapo;
     bool correoDetenido;
+    bool convoyPaso;
+    float salidaCorreo;
+    float crujido;
     float intervaloOleada;
     float tiempoOleada;
 
-    //Sin dueño: las estructuras no se borran hasta que termina el nivel
     Estructura *puente;
     Estructura *carretas[3];
     Estructura *barriles[3];
-    Enemigo *correo; //nullptr hasta que sale, y otra vez nullptr en cuanto cae
+    Enemigo *correo;
 
     void soltarCorreo();
     void revisarCorreo();
+    void avanzarConvoy(float dt);
+    void asentarEnCamino(Entidad *e);
 
 protected:
     void alBorrar(Entidad *e) override;
@@ -43,10 +42,10 @@ public:
     void generarOleada();
     void moverCamara(float dt);
 
-    //Lectura para la capa gráfica
     short getPartesRestantes() const;
     bool correoEnFuga() const;
     bool getCorreoEscapo() const;
+    bool getConvoyPaso() const;
     float getHuecoInicio() const;
     float getHuecoFin() const;
     float getFinCamino() const;

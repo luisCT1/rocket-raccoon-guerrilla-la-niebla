@@ -1,16 +1,25 @@
 #include "Marcador.h"
 
 #include <QFont>
+#include <QFontMetrics>
 #include <QPainter>
 
 namespace {
-void pintarCifra(QPainter &pintor, const QRect &caja, const QString &texto) {
+void pintarCifra(QPainter &pintor, const QRect &caja, const QString &texto, int tamForzado) {
     if (caja.isEmpty())
         return;
-    const int tam = qBound(9, qRound(caja.height() * 0.72f), 22);
+    int tam = tamForzado > 0 ? tamForzado : qBound(9, qRound(caja.height() * 0.52f), 18);
     QFont letra(QStringLiteral("Georgia"), tam, QFont::Bold);
     letra.setStyleStrategy(QFont::PreferAntialias);
     letra.setLetterSpacing(QFont::AbsoluteSpacing, 1.0);
+    if (tamForzado <= 0) {
+        QFontMetrics medida(letra);
+        while (tam > 8 && medida.horizontalAdvance(texto) > caja.width() - 8) {
+            --tam;
+            letra.setPointSize(tam);
+            medida = QFontMetrics(letra);
+        }
+    }
     pintor.setFont(letra);
     for (int dy = -2; dy <= 2; ++dy) {
         for (int dx = -2; dx <= 2; ++dx) {
@@ -41,25 +50,70 @@ void prepararMarcador(const QImage &hoja, PiezasHud &p) {
     p.furia = src.copy(387, 1034, 1546, 404);
     p.tapa = QColor(6, 27, 48);
 
-    const QRect corazonAbs[3] = {QRect(608, 230, 173, 143), QRect(816, 230, 169, 143), QRect(1018, 230, 169, 143)};
-    for (const QRect &abs : corazonAbs) {
-        const QRect local = abs.translated(-42, -22);
-        if (!p.vidas.rect().contains(local))
+    const QRect cuerpos[3] = {QRect(566, 208, 173, 145), QRect(773, 208, 170, 144), QRect(976, 208, 171, 145)};
+    const int margen = 26;
+    QVector<QRect> ventanas;
+    for (const QRect &cuerpo : cuerpos) {
+        const QRect ventana = cuerpo.adjusted(-margen, -margen, margen, margen).intersected(p.vidas.rect());
+        if (ventana.isEmpty())
             continue;
-        p.corazones.append(p.vidas.copy(local));
-        p.posCorazon.append(local.topLeft());
-        for (int y = local.top(); y <= local.bottom(); ++y) {
-            for (int x = local.left(); x <= local.right(); ++x)
-                p.vidas.setPixelColor(x, y, p.tapa);
+        p.corazones.append(p.vidas.copy(ventana));
+        p.posCorazon.append(ventana.topLeft());
+        ventanas.append(ventana);
+    }
+    auto esPanel = [](const QColor &c) {
+        return c.alpha() > 180 && c.blue() >= 45 && c.green() >= 24 && c.red() < 40;
+    };
+    auto esOro = [](const QColor &c) {
+        return c.red() > 140 && c.green() > 90 && (c.green() - c.blue()) > 45 && c.red() > c.blue() + 25;
+    };
+    for (const QRect &v : ventanas) {
+        for (int y = v.top(); y <= v.bottom(); ++y) {
+            QColor izq;
+            QColor der;
+            bool hayIzq = false;
+            bool hayDer = false;
+            for (int x = v.left() - 1; x >= 0; --x) {
+                const QColor c = p.vidas.pixelColor(x, y);
+                if (esPanel(c)) {
+                    izq = c;
+                    hayIzq = true;
+                    break;
+                }
+            }
+            for (int x = v.right() + 1; x < p.vidas.width(); ++x) {
+                const QColor c = p.vidas.pixelColor(x, y);
+                if (esPanel(c)) {
+                    der = c;
+                    hayDer = true;
+                    break;
+                }
+            }
+            if (!hayIzq && !hayDer)
+                continue;
+            if (!hayIzq)
+                izq = der;
+            if (!hayDer)
+                der = izq;
+            const int span = qMax(1, v.width() - 1);
+            for (int x = v.left(); x <= v.right(); ++x) {
+                if (esOro(p.vidas.pixelColor(x, y)))
+                    continue;
+                const float t = float(x - v.left()) / float(span);
+                p.vidas.setPixelColor(x, y, QColor(qRound(izq.red() * (1.f - t) + der.red() * t),
+                                                   qRound(izq.green() * (1.f - t) + der.green() * t),
+                                                   qRound(izq.blue() * (1.f - t) + der.blue() * t)));
+            }
         }
     }
 
     p.rojo = QRect(65, 175, 851, 79);
-    p.cifraVida = QRect(1009, 168, 250, 140);
+    p.cifraVida = QRect(1012, 128, 280, 168);
     p.zonaBalas = QRect(425, 87, 450, 200);
     p.cifraBalas = QRect(915, 77, 360, 198);
-    p.cifraGranadas = QRect(271, 97, 540, 160);
+    p.cifraGranadas = QRect(348, 108, 220, 140);
     p.rellenoFuria = QRect(393, 190, 1080, 112);
+    p.cifraFuria = QRect(1308, 168, 176, 128);
 }
 
 QImage componerMarcador(const PiezasHud &p, int vidas, float salud, int municion, int granadas, float furia) {
@@ -68,22 +122,44 @@ QImage componerMarcador(const PiezasHud &p, int vidas, float salud, int municion
 
     const float parte = qBound(0.f, salud, 1.f);
     const float furiaParte = qBound(0.f, furia, 1.f);
-    const int balasVisibles = qBound(0, qRound(6.f * municion / 30.f), 6);
+    const int balasVisibles = municion <= 0 ? 0 : qBound(1, qRound(6.f * municion / 20.f), 6);
 
+    const int altoArriba = 64;
+    const int sepX = 8;
+    const int sepY = 6;
     auto pieza = [](const QImage &src, int alto) {
         return src.isNull() ? QImage() : src.scaledToHeight(alto, Qt::SmoothTransformation);
     };
-    QImage vidasD = pieza(p.vidas, 86);
-    QImage saludD = pieza(p.salud, 86);
-    QImage balasD = pieza(p.balas, 64);
-    QImage granadasD = pieza(p.granadas, 64);
-    QImage furiaD = pieza(p.furia, 58);
+    QImage vidasD = pieza(p.vidas, altoArriba);
+    QImage saludD = pieza(p.salud, altoArriba);
+    const int anchoFila = vidasD.width() + sepX + saludD.width();
+    const int altoMedio = p.balas.height() > 0 && p.granadas.height() > 0
+                              ? qMax(1, qRound(float(anchoFila - sepX) / (float(p.balas.width()) / float(p.balas.height())
+                                                                          + float(p.granadas.width()) / float(p.granadas.height()))))
+                              : 56;
+    QImage balasD = pieza(p.balas, altoMedio);
+    QImage granadasD = pieza(p.granadas, altoMedio);
+    QImage furiaD = pieza(p.furia, altoMedio);
 
-    const float ev = p.vidas.height() > 0 ? 86.f / float(p.vidas.height()) : 1.f;
-    const float es = p.salud.height() > 0 ? 86.f / float(p.salud.height()) : 1.f;
-    const float eb = p.balas.height() > 0 ? 64.f / float(p.balas.height()) : 1.f;
-    const float eg = p.granadas.height() > 0 ? 64.f / float(p.granadas.height()) : 1.f;
-    const float ef = p.furia.height() > 0 ? 58.f / float(p.furia.height()) : 1.f;
+    const float ev = p.vidas.height() > 0 ? float(vidasD.height()) / float(p.vidas.height()) : 1.f;
+    const float es = p.salud.height() > 0 ? float(saludD.height()) / float(p.salud.height()) : 1.f;
+    const float eb = p.balas.height() > 0 ? float(balasD.height()) / float(p.balas.height()) : 1.f;
+    const float eg = p.granadas.height() > 0 ? float(granadasD.height()) / float(p.granadas.height()) : 1.f;
+    const float ef = p.furia.height() > 0 ? float(furiaD.height()) / float(p.furia.height()) : 1.f;
+
+    const QRect cajaBalas = escalar(p.cifraBalas, eb);
+    int tamComun = qBound(9, qRound(cajaBalas.height() * 0.52f), 18);
+    {
+        QFont letra(QStringLiteral("Georgia"), tamComun, QFont::Bold);
+        letra.setLetterSpacing(QFont::AbsoluteSpacing, 1.0);
+        QFontMetrics medida(letra);
+        const QString muestra = QString::number(municion) + QStringLiteral("/20");
+        while (tamComun > 8 && medida.horizontalAdvance(muestra) > cajaBalas.width() - 8) {
+            --tamComun;
+            letra.setPointSize(tamComun);
+            medida = QFontMetrics(letra);
+        }
+    }
 
     QPainter pv(&vidasD);
     for (int i = 0; i < vidas && i < p.corazones.size(); ++i) {
@@ -100,7 +176,7 @@ QImage componerMarcador(const PiezasHud &p, int vidas, float salud, int municion
         const QRect hueco(p.rojo.x() + lleno, p.rojo.y(), p.rojo.width() - lleno, p.rojo.height());
         ps.fillRect(escalar(hueco, es), p.tapa);
     }
-    pintarCifra(ps, escalar(p.cifraVida, es), QString::number(qRound(parte * 100.f)) + QStringLiteral("%"));
+    pintarCifra(ps, escalar(p.cifraVida, es), QString::number(qRound(parte * 100.f)) + QStringLiteral("%"), tamComun);
     ps.end();
 
     QPainter pb(&balasD);
@@ -108,11 +184,11 @@ QImage componerMarcador(const PiezasHud &p, int vidas, float salud, int municion
         const int corte = p.zonaBalas.x() + p.zonaBalas.width() * balasVisibles / 6;
         pb.fillRect(escalar(QRect(corte, p.zonaBalas.y(), p.zonaBalas.right() - corte, p.zonaBalas.height()), eb), p.tapa);
     }
-    pintarCifra(pb, escalar(p.cifraBalas, eb), QString::number(municion) + QStringLiteral("/30"));
+    pintarCifra(pb, escalar(p.cifraBalas, eb), QString::number(municion) + QStringLiteral("/20"), tamComun);
     pb.end();
 
     QPainter pg(&granadasD);
-    pintarCifra(pg, escalar(p.cifraGranadas, eg), QString::number(qMax(0, granadas)));
+    pintarCifra(pg, escalar(p.cifraGranadas, eg), QString::number(qMax(0, granadas)), tamComun);
     pg.end();
 
     QPainter pf(&furiaD);
@@ -121,20 +197,22 @@ QImage componerMarcador(const PiezasHud &p, int vidas, float salud, int municion
         const QRect hueco(p.rellenoFuria.x() + lleno, p.rellenoFuria.y(), p.rellenoFuria.width() - lleno, p.rellenoFuria.height());
         pf.fillRect(escalar(hueco, ef), p.tapa);
     }
+    pintarCifra(pf, escalar(p.cifraFuria, ef), QString::number(qRound(furiaParte * 100.f)) + QStringLiteral("%"), tamComun);
     pf.end();
 
-    const int filaVida = qMax(vidasD.height(), saludD.height());
-    const int ancho = qMax(vidasD.width() + 8 + saludD.width(),
-                           qMax(balasD.width() + 8 + granadasD.width(), furiaD.width()));
-    const int yBalas = filaVida + 4;
-    const int yFuria = yBalas + qMax(balasD.height(), granadasD.height()) + 4;
-    QImage lienzo(ancho, yFuria + furiaD.height(), QImage::Format_ARGB32);
+    const int ySalud = qMax(0, vidasD.height() - qRound(float(saludD.height()) * (357.f / 456.f)));
+    const int filaMedio = qMax(balasD.height(), granadasD.height());
+    const int ancho = qMax(anchoFila, qMax(balasD.width() + sepX + granadasD.width(), furiaD.width()));
+    const int yBalas = vidasD.height() + sepY;
+    const int yFuria = yBalas + filaMedio + sepY;
+    const int altoLienzo = qMax(ySalud + saludD.height(), yFuria + furiaD.height());
+    QImage lienzo(ancho, altoLienzo, QImage::Format_ARGB32);
     lienzo.fill(Qt::transparent);
     QPainter todo(&lienzo);
-    todo.drawImage(0, (filaVida - vidasD.height()) / 2, vidasD);
-    todo.drawImage(vidasD.width() + 8, (filaVida - saludD.height()) / 2, saludD);
-    todo.drawImage(0, yBalas, balasD);
-    todo.drawImage(balasD.width() + 8, yBalas, granadasD);
+    todo.drawImage(0, 0, vidasD);
+    todo.drawImage(vidasD.width() + sepX, ySalud, saludD);
+    todo.drawImage(0, yBalas + (filaMedio - balasD.height()) / 2, balasD);
+    todo.drawImage(balasD.width() + sepX, yBalas + (filaMedio - granadasD.height()) / 2, granadasD);
     todo.drawImage(0, yFuria, furiaD);
     todo.end();
     return lienzo;

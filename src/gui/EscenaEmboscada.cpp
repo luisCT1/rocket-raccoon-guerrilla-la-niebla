@@ -7,7 +7,9 @@
 #include "Juego.h"
 #include "NivelEmboscada.h"
 #include "Proyectil.h"
+#include "Recogible.h"
 #include "Rocket.h"
+#include "Sonido.h"
 
 #include <QFont>
 #include <QImage>
@@ -36,6 +38,25 @@ QPixmap circulo(const QColor &color, int diametro) {
     pintor.setBrush(color);
     pintor.setPen(Qt::NoPen);
     pintor.drawEllipse(1, 1, diametro - 2, diametro - 2);
+    return mapa;
+}
+
+QPixmap balaBrillante(const QColor &color, int diametro, bool furia) {
+    const int lado = diametro + 10;
+    QPixmap mapa(lado, lado);
+    mapa.fill(Qt::transparent);
+    QPainter pintor(&mapa);
+    pintor.setRenderHint(QPainter::Antialiasing);
+    pintor.setPen(Qt::NoPen);
+    pintor.setBrush(furia ? QColor(255, 70, 16, 120) : QColor(color.red(), color.green(), color.blue(), 90));
+    pintor.drawEllipse(0, 0, lado - 1, lado - 1);
+    pintor.setPen(QPen(furia ? QColor(70, 8, 4) : QColor(36, 18, 6), 2));
+    pintor.setBrush(color);
+    pintor.drawEllipse(5, 5, diametro - 1, diametro - 1);
+    pintor.setPen(Qt::NoPen);
+    pintor.setBrush(furia ? QColor(255, 214, 120) : QColor(255, 248, 214));
+    const int nucleo = qMax(6, diametro / 3);
+    pintor.drawEllipse(5 + (diametro - nucleo) / 2, 5 + (diametro - nucleo) / 2, nucleo, nucleo);
     return mapa;
 }
 
@@ -260,6 +281,7 @@ QVector<TrozoSelva> recortarSelva(const QPixmap &hoja) {
 EscenaEmboscada::EscenaEmboscada() {
     setSceneRect(0, 0, 4000, 720);
     setBackgroundBrush(QColor(168, 186, 190));
+    sonidos = new Sonido(this);
     cargarSprites();
 
     juego = new Juego();
@@ -269,6 +291,7 @@ EscenaEmboscada::EscenaEmboscada() {
 }
 
 EscenaEmboscada::~EscenaEmboscada() {
+    delete sonidos;
     delete juego;
 }
 
@@ -285,6 +308,7 @@ void EscenaEmboscada::cargarSprites() {
     impulso = cuadros(rocket, {QRect(14, 783, 157, 150), QRect(182, 783, 161, 150),
                                QRect(355, 783, 149, 150), QRect(527, 783, 144, 150)}, false);
     furia = cuadros(rocket, {QRect(15, 1340, 164, 155), QRect(198, 1340, 140, 155), QRect(522, 1340, 140, 155)}, false);
+    agachar = cuadros(rocket, {QRect(846, 263, 166, 98)}, false);
     rocketDanio = cuadros(rocket, {QRect(522, 960, 148, 151), QRect(684, 960, 147, 151)}, false);
     rocketMuerte = cuadros(rocket, {QRect(684, 960, 147, 151), QRect(851, 960, 154, 151)}, false);
 
@@ -300,6 +324,8 @@ void EscenaEmboscada::cargarSprites() {
     const QPixmap jinete(QStringLiteral(":/nivel1/sprites_jinete.png"));
     jineteGalope = cuadros(jinete, {QRect(103, 726, 192, 199), QRect(506, 726, 186, 199), QRect(908, 726, 184, 199),
                                     QRect(1308, 726, 184, 199), QRect(1706, 726, 188, 199), QRect(2108, 726, 184, 199)}, false);
+    jineteDispara = cuadros(jinete, {QRect(105, 1400, 190, 170), QRect(506, 1391, 186, 186), QRect(914, 1390, 171, 189),
+                                      QRect(1302, 1390, 196, 188), QRect(1697, 1393, 203, 186), QRect(2112, 1390, 174, 188)}, false);
     jineteBandera = cuadros(jinete, {QRect(126, 3356, 148, 216), QRect(523, 3356, 154, 216)}, false);
     jineteTrompeta = cuadros(jinete, {QRect(917, 3356, 166, 216), QRect(1327, 3356, 146, 216),
                                       QRect(1732, 3356, 136, 216), QRect(2126, 3356, 148, 216)}, false);
@@ -321,6 +347,14 @@ void EscenaEmboscada::cargarSprites() {
         puenteQuieto = puentes.first();
 
     prepararHud(QPixmap(QStringLiteral(":/nivel1/sprint_vidas_municion.png")));
+
+    const QPixmap hojaIconos(QStringLiteral(":/nivel1/sprint_iconos.png"));
+    iconos = {
+        hojaIconos.copy(200, 41, 735, 426),
+        hojaIconos.copy(189, 534, 738, 456),
+        hojaIconos.copy(219, 1005, 624, 470),
+        hojaIconos.copy(203, 1485, 660, 562)
+    };
 }
 
 void EscenaEmboscada::apoyar(QGraphicsPixmapItem *sprite, const QPixmap &cuadro, float centro, float suelo, float alto, float altoFuente, float fraccion) {
@@ -353,7 +387,7 @@ void EscenaEmboscada::dibujarHud() {
         marcador->setZValue(40);
     }
     marcador->setPixmap(QPixmap::fromImage(lienzo));
-    marcador->setPos((nivel ? nivel->getCamaraX() : 0.f) + 14.f, 8.f);
+    marcador->setPos((nivel ? nivel->getCamaraX() : 0.f) + 52.f, 42.f);
 }
 
 void EscenaEmboscada::armarSuelo() {
@@ -474,6 +508,10 @@ void EscenaEmboscada::soltar(int tecla) {
     teclas.remove(tecla);
 }
 
+void EscenaEmboscada::mantener(int tecla) {
+    teclas.insert(tecla);
+}
+
 void EscenaEmboscada::apuntar(float x, float y) {
     punteroX = x;
     punteroY = y;
@@ -494,6 +532,7 @@ void EscenaEmboscada::avanzar(float dt) {
             nivel->jugadorMueve('L');
         if (teclas.contains(Qt::Key_D) || teclas.contains(Qt::Key_Right))
             nivel->jugadorMueve('R');
+        rocket->fijarAgachado(teclas.contains(Qt::Key_S) || teclas.contains(Qt::Key_Down));
 
         const float dir = rocket->getDireccion() == 'L' ? -1.f : 1.f;
         const float ax = rocket->getCentroX() + dir * 480.f;
@@ -568,6 +607,8 @@ QString EscenaEmboscada::mensajeFinal() const {
         return {};
     if (nivel->fueGanado())
         return QStringLiteral("Misión cumplida\nEl convoy no pasó y el correo no avisó.");
+    if (nivel->getConvoyPaso())
+        return QStringLiteral("Misión fallida\nEl convoy pasó y llevó el mensaje.");
     if (nivel->getCorreoEscapo())
         return QStringLiteral("Misión fallida\nEl correo llevó el aviso.");
     if (nivel->jugador()->cayoAlVacio())
@@ -590,17 +631,31 @@ bool EscenaEmboscada::gano() const {
     return nivel && nivel->fueGanado();
 }
 
+bool EscenaEmboscada::enFuria() const {
+    Rocket *rocket = nivel ? nivel->jugador() : nullptr;
+    return rocket && rocket->estaFurioso();
+}
+
 bool EscenaEmboscada::miraALaIzquierda(Entidad *entidad) const {
     if (auto *rocket = dynamic_cast<Rocket *>(entidad))
         return rocket->getDireccion() == 'L';
     if (auto *enemigo = dynamic_cast<Enemigo *>(entidad))
         return enemigo->getDireccion() == 'L';
+    if (auto *estructura = dynamic_cast<Estructura *>(entidad))
+        return estructura->getTipo() == EST_CARRETA;
     return false;
 }
 
 QPixmap EscenaEmboscada::cuadroDe(Entidad *entidad) const {
     const QVector<QPixmap> *lista = nullptr;
     int indice = 0;
+
+    if (entidad->clase() == CLASE_RECOGIBLE) {
+        const short tipo = static_cast<Recogible *>(entidad)->getTipo();
+        if (tipo >= 0 && tipo < iconos.size())
+            return iconos.at(tipo);
+        return {};
+    }
 
     if (entidad->clase() == CLASE_ROCKET) {
         auto *rocket = static_cast<Rocket *>(entidad);
@@ -615,6 +670,8 @@ QPixmap EscenaEmboscada::cuadroDe(Entidad *entidad) const {
             lista = &furia;
         else if (estado == 2)
             lista = &saltar;
+        else if (rocket->estaAgachado() && !agachar.isEmpty())
+            lista = &agachar;
         else if (granadaMuestra > 0.f)
             lista = &lanzar;
         else if (teclas.contains(Qt::Key_Space))
@@ -633,16 +690,19 @@ QPixmap EscenaEmboscada::cuadroDe(Entidad *entidad) const {
         auto *enemigo = static_cast<Enemigo *>(entidad);
         const short aspecto = enemigo->getAspecto();
         const bool jinete = enemigo->getEsCorreo() || aspecto >= 2;
+        const bool combate = enemigo->llevaArma();
         if (jinete) {
-            if (aspecto == 3 && !jineteBandera.isEmpty())
+            if (combate && !enemigo->getEsCorreo() && !jineteDispara.isEmpty())
+                lista = &jineteDispara;
+            else if (aspecto == 3 && !jineteBandera.isEmpty())
                 lista = &jineteBandera;
             else if (aspecto == 4 && !jineteTrompeta.isEmpty())
                 lista = &jineteTrompeta;
             else
                 lista = &jineteGalope;
-        } else if (aspecto == 1 && !soldadoBandera.isEmpty()) {
+        } else if (aspecto == 1 && !combate && !soldadoBandera.isEmpty()) {
             lista = &soldadoBandera;
-        } else if (enemigo->estadoVisual() == 1)
+        } else if (combate)
             lista = &soldadoDispara;
         else
             lista = &soldadoCamina;
@@ -678,6 +738,22 @@ void EscenaEmboscada::colocar(Entidad *entidad, QGraphicsItem *dibujo) {
         return;
     if (miraALaIzquierda(entidad))
         cuadro = voltear(cuadro);
+
+    if (entidad->clase() == CLASE_RECOGIBLE) {
+        auto *reco = static_cast<Recogible *>(entidad);
+        if (!reco->estaDisponible()) {
+            sprite->setVisible(false);
+            return;
+        }
+        sprite->setVisible(true);
+        const QPixmap puesto = cuadro.scaledToHeight(58, Qt::SmoothTransformation);
+        const float bob = std::sin(tiempo * 3.2f + entidad->getX() * 0.015f) * 6.f;
+        sprite->setPixmap(puesto);
+        sprite->setPos(entidad->getCentroX() - puesto.width() / 2.f,
+                       entidad->getY() + entidad->getAlto() - puesto.height() + bob);
+        sprite->setZValue(2.8);
+        return;
+    }
 
     float altoDibujo = entidad->getAlto();
     float fuente = 0.f;
@@ -725,6 +801,19 @@ void EscenaEmboscada::sincronizar() {
     if (!nivel)
         return;
 
+    convoyHerido = false;
+    for (Entidad *entidad : nivel->obtenerEntidades()) {
+        if (entidad->clase() != CLASE_ESTRUCTURA)
+            continue;
+        auto *pieza = static_cast<Estructura *>(entidad);
+        if (pieza->getTipo() != EST_CARRETA)
+            continue;
+        if (pieza->estaDestruida() || pieza->getResistencia() < 100.f) {
+            convoyHerido = true;
+            break;
+        }
+    }
+
     const std::vector<Entidad *> &lista = nivel->obtenerEntidades();
     QSet<Entidad *> vivas;
 
@@ -734,11 +823,16 @@ void EscenaEmboscada::sincronizar() {
         if (!dibujo) {
             if (entidad->clase() == CLASE_PROYECTIL) {
                 auto *bala = static_cast<Proyectil *>(entidad);
-                QColor color = bala->esDeRocket() ? QColor(232, 196, 74) : QColor(176, 42, 36);
-                int diametro = bala->esBombeado() ? 18 : (bala->esDeRocket() ? 12 : 14);
+                QPixmap icono;
                 if (bala->esBombeado())
-                    color = QColor(86, 122, 62);
-                auto *punto = addPixmap(circulo(color, diametro));
+                    icono = circulo(QColor(86, 122, 62), 18);
+                else if (bala->esDeRocket() && bala->getDanio() > 30.f)
+                    icono = balaBrillante(QColor(255, 64, 18), 26, true);
+                else if (bala->esDeRocket())
+                    icono = balaBrillante(QColor(255, 214, 70), 22, false);
+                else
+                    icono = balaBrillante(QColor(255, 48, 36), 18, false);
+                auto *punto = addPixmap(icono);
                 punto->setZValue(4);
                 dibujo = punto;
             } else {
@@ -755,9 +849,14 @@ void EscenaEmboscada::sincronizar() {
             piezas.insert(entidad, dibujo);
         }
 
-        if (entidad->clase() == CLASE_PROYECTIL)
-            dibujo->setPos(entidad->getX(), entidad->getY());
-        else
+        if (entidad->clase() == CLASE_PROYECTIL) {
+            if (auto *punto = dynamic_cast<QGraphicsPixmapItem *>(dibujo)) {
+                const QSize s = punto->pixmap().size();
+                dibujo->setPos(entidad->getCentroX() - s.width() / 2.0, entidad->getCentroY() - s.height() / 2.0);
+            } else {
+                dibujo->setPos(entidad->getX(), entidad->getY());
+            }
+        } else
             colocar(entidad, dibujo);
     }
 
@@ -798,5 +897,9 @@ void EscenaEmboscada::sincronizar() {
 
     std::vector<short> eventos;
     nivel->tomarEventos(eventos);
+    if (sonidos) {
+        Rocket *rocket = nivel->jugador();
+        sonidos->eventos(eventos, rocket && rocket->estaFurioso());
+    }
     dibujarHud();
 }

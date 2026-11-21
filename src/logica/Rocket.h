@@ -5,10 +5,6 @@
 
 class Proyectil;
 
-// Protagonista. Dispara, lanza granadas, hace dash, entra en furia y hace el ruido que oye el Capitán.
-// Funciona en vista lateral (gravedad y salto) y en vista cenital (se mueve en los dos ejes).
-// No conoce el teclado: la capa gráfica le dice qué hacer a través del Nivel.
-
 class Rocket : public Entidad {
 private:
     short vidas;
@@ -17,30 +13,37 @@ private:
     bool cayo;
     short municion;
     short granadas;
-    float barraFuria; //de 0 a 1; se llena al derrotar enemigos
+    float barraFuria;
     bool furioso;
     float tiempoFuria;
     float recargaDash;
     float bloqueoDisparo;
     float radioRuido;
-    char direccion; //'L', 'R', 'U' o 'D'
+    char direccion;
     bool enSuelo;
+    bool agachado;
 
     bool cenital;
-    float intencionX; //hacia dónde quiere moverse en este cuadro (-1, 0 o 1)
+    float intencionX;
     float intencionY;
     bool moviendose;
     float velY;
-    float xAnterior; //posición al empezar el cuadro: el Nivel la usa para apoyarlo y bloquearlo
+    float xAnterior;
     float yAnterior;
     float tiempoDash;
     float dashX;
     float dashY;
     float invulnerable;
     float recargaDisparo;
-    float recargaMunicion;
     float avisoGranada;
     bool golpePendiente;
+    bool recogidaPendiente;
+    short tipoRecogida;
+    bool pasoPendiente;
+    float pasoAcum;
+    bool agachadoAntes;
+    bool agacharPendiente;
+    bool aterrizajePendiente;
 
 public:
     Rocket(float x, float y);
@@ -48,24 +51,33 @@ public:
 
     void actualizar(float dt) override;
     short clase() const override;
-    short estadoVisual() const override; //0 quieto, 1 camina, 2 en el aire, 3 dash
-    void recibirDanio(float cantidad) override; //baja la vida; en cero se pierde una oportunidad
+    short estadoVisual() const override;
+    void recibirDanio(float cantidad) override;
 
-    void mover(char dir);  //'L', 'R', 'U' o 'D'. Se llama en cada cuadro mientras la tecla esté abajo
+    void mover(char dir);
     bool saltar();
-    //Devuelven nullptr si no puede (sin munición, recargando o bloqueado). Quien recibe el puntero es el dueño.
+
     Proyectil *disparar(float objX, float objY);
     Proyectil *lanzarGranada(float objX, float objY);
     bool dash(char dir);
     bool activarFuria();
-    bool recibirDanio(); //false si estaba invulnerable y no perdió vida
-    void perderVida();   //sin invulnerabilidad que valga (caída al barranco)
+    void fijarAgachado(bool agacha);
+    bool estaAgachado() const;
+    bool recibirDanio();
+    void perderVida();
     void sumarFuria(float cantidad);
+    bool recogerVida();
+    bool recogerMunicion(short cantidad);
+    bool recogerGranadas(short cantidad);
+    bool recogerFuria(float cantidad);
     float ruidoActual() const;
     bool lanzoGranadaReciente() const;
-    bool consumirGolpe(); //true una sola vez por cada vida perdida
+    bool consumirGolpe();
+    short consumirRecogida();
+    bool consumirPaso();
+    bool consumirAgacharse();
+    bool consumirAterrizaje();
 
-    //Lo que usa el Nivel para apoyarlo en el piso y las plataformas
     void fijarCenital(bool c);
     void aterrizarEn(float ySuperficie);
     void soltarSuelo();

@@ -8,9 +8,12 @@
 #include "Juego.h"
 #include "NivelPenon.h"
 #include "Proyectil.h"
+#include "Recogible.h"
 #include "Rocket.h"
+#include "Sonido.h"
 
 #include <QFont>
+#include <QImage>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsRectItem>
@@ -35,6 +38,25 @@ QPixmap circulo(const QColor &color, int diametro) {
     pintor.setBrush(color);
     pintor.setPen(Qt::NoPen);
     pintor.drawEllipse(1, 1, diametro - 2, diametro - 2);
+    return mapa;
+}
+
+QPixmap balaBrillante(const QColor &color, int diametro, bool furia) {
+    const int lado = diametro + 10;
+    QPixmap mapa(lado, lado);
+    mapa.fill(Qt::transparent);
+    QPainter pintor(&mapa);
+    pintor.setRenderHint(QPainter::Antialiasing);
+    pintor.setPen(Qt::NoPen);
+    pintor.setBrush(furia ? QColor(255, 70, 16, 120) : QColor(color.red(), color.green(), color.blue(), 90));
+    pintor.drawEllipse(0, 0, lado - 1, lado - 1);
+    pintor.setPen(QPen(furia ? QColor(70, 8, 4) : QColor(36, 18, 6), 2));
+    pintor.setBrush(color);
+    pintor.drawEllipse(5, 5, diametro - 1, diametro - 1);
+    pintor.setPen(Qt::NoPen);
+    pintor.setBrush(furia ? QColor(255, 214, 120) : QColor(255, 248, 214));
+    const int nucleo = qMax(6, diametro / 3);
+    pintor.drawEllipse(5 + (diametro - nucleo) / 2, 5 + (diametro - nucleo) / 2, nucleo, nucleo);
     return mapa;
 }
 
@@ -201,6 +223,7 @@ QPixmap pieza(const QPixmap &hoja, const QRect &zona) {
 EscenaPenon::EscenaPenon() {
     setSceneRect(0, 0, 3920, 720);
     setBackgroundBrush(QColor(150, 176, 186));
+    sonidos = new Sonido(this);
     juego = new Juego();
     juego->iniciarNivel(NIVEL_PENON, DIF_NORMAL);
     nivel = dynamic_cast<NivelPenon *>(juego->nivelActivo());
@@ -211,6 +234,7 @@ EscenaPenon::EscenaPenon() {
 }
 
 EscenaPenon::~EscenaPenon() {
+    delete sonidos;
     delete juego;
 }
 
@@ -227,6 +251,7 @@ void EscenaPenon::cargarSprites() {
     impulso = cuadros(rocket, {QRect(14, 783, 157, 150), QRect(182, 783, 161, 150),
                                QRect(355, 783, 149, 150), QRect(527, 783, 144, 150)}, false);
     furia = cuadros(rocket, {QRect(15, 1340, 164, 155), QRect(198, 1340, 140, 155), QRect(522, 1340, 140, 155)}, false);
+    agachar = cuadros(rocket, {QRect(846, 263, 166, 98)}, false);
     rocketDanio = cuadros(rocket, {QRect(522, 960, 148, 151), QRect(684, 960, 147, 151)}, false);
     rocketMuerte = cuadros(rocket, {QRect(684, 960, 147, 151), QRect(851, 960, 154, 151)}, false);
 
@@ -253,12 +278,22 @@ void EscenaPenon::cargarSprites() {
                                       QRect(630, 31, 310, 245), QRect(950, 31, 290, 245)});
     for (QPixmap &cuadro : canonCuadros)
         cuadro = voltear(cuadro);
-    balaCanon = cuadros(batalla, {QRect(109, 333, 86, 120)});
+    balaCanon = cuadros(batalla, {QRect(109, 437, 86, 84)});
     explosion = cuadros(batalla, {QRect(326, 333, 279, 263), QRect(637, 333, 287, 263), QRect(953, 333, 284, 263)});
     banderaCuadros = cuadros(batalla, {QRect(44, 635, 157, 276), QRect(357, 635, 222, 276),
                                         QRect(643, 635, 264, 276), QRect(956, 635, 272, 276)});
     viento = cuadros(batalla, {QRect(24, 945, 246, 277), QRect(356, 945, 225, 277),
                                 QRect(658, 945, 244, 277), QRect(973, 945, 250, 277)});
+    QImage filo(180, 130, QImage::Format_ARGB32_Premultiplied);
+    filo.fill(Qt::transparent);
+    QPainter tinta(&filo);
+    tinta.setRenderHint(QPainter::Antialiasing, true);
+    tinta.setPen(QPen(QColor(255, 228, 150, 230), 8, Qt::SolidLine, Qt::RoundCap));
+    tinta.drawArc(QRect(8, 18, 160, 96), 20 * 16, 150 * 16);
+    tinta.setPen(QPen(QColor(255, 255, 245, 240), 3, Qt::SolidLine, Qt::RoundCap));
+    tinta.drawArc(QRect(14, 26, 148, 80), 28 * 16, 136 * 16);
+    tinta.end();
+    tajoCuadro = QPixmap::fromImage(filo);
 
     const QPixmap plataformas(QStringLiteral(":/nivel3/plataformas.png"));
     suelos = cuadros(plataformas, {QRect(26, 116, 262, 181), QRect(338, 116, 262, 181),
@@ -282,6 +317,14 @@ void EscenaPenon::cargarSprites() {
     }
 
     prepararHud(QPixmap(QStringLiteral(":/nivel1/sprint_vidas_municion.png")));
+
+    const QPixmap hojaIconos(QStringLiteral(":/nivel1/sprint_iconos.png"));
+    iconos = {
+        hojaIconos.copy(200, 41, 735, 426),
+        hojaIconos.copy(189, 534, 738, 456),
+        hojaIconos.copy(219, 1005, 624, 470),
+        hojaIconos.copy(203, 1485, 660, 562)
+    };
 }
 
 void EscenaPenon::prepararHud(const QPixmap &hoja) {
@@ -577,6 +620,10 @@ void EscenaPenon::soltar(int tecla) {
     teclas.remove(tecla);
 }
 
+void EscenaPenon::mantener(int tecla) {
+    teclas.insert(tecla);
+}
+
 void EscenaPenon::apuntar(float, float) {}
 
 void EscenaPenon::avanzar(float dt) {
@@ -598,6 +645,7 @@ void EscenaPenon::avanzar(float dt) {
             nivel->jugadorMueve('L');
         if (teclas.contains(Qt::Key_D) || teclas.contains(Qt::Key_Right))
             nivel->jugadorMueve('R');
+        rocket->fijarAgachado(teclas.contains(Qt::Key_S) || teclas.contains(Qt::Key_Down));
         const float dir = rocket->getDireccion() == 'L' ? -1.f : 1.f;
         if (teclas.contains(Qt::Key_Space))
             nivel->jugadorDispara(rocket->getCentroX() + dir * 480.f, rocket->getY() + rocket->getAlto() * 0.35f);
@@ -681,6 +729,11 @@ bool EscenaPenon::acabo() const {
     return nivel && nivel->estaTerminado();
 }
 
+bool EscenaPenon::enFuria() const {
+    Rocket *rocket = nivel ? nivel->jugador() : nullptr;
+    return rocket && rocket->estaFurioso();
+}
+
 bool EscenaPenon::gano() const {
     return nivel && nivel->fueGanado();
 }
@@ -697,6 +750,13 @@ QPixmap EscenaPenon::cuadroDe(Entidad *entidad) const {
     const QVector<QPixmap> *lista = nullptr;
     int indice = 0;
 
+    if (entidad->clase() == CLASE_RECOGIBLE) {
+        const short tipo = static_cast<Recogible *>(entidad)->getTipo();
+        if (tipo >= 0 && tipo < iconos.size())
+            return iconos.at(tipo);
+        return {};
+    }
+
     if (entidad->clase() == CLASE_ROCKET) {
         auto *rocket = static_cast<Rocket *>(entidad);
         const short estado = rocket->estadoVisual();
@@ -710,6 +770,8 @@ QPixmap EscenaPenon::cuadroDe(Entidad *entidad) const {
             lista = &furia;
         else if (estado == 2)
             lista = &saltar;
+        else if (rocket->estaAgachado() && !agachar.isEmpty())
+            lista = &agachar;
         else if (granadaMuestra > 0.f)
             lista = &lanzar;
         else if (teclas.contains(Qt::Key_Space))
@@ -820,6 +882,10 @@ void EscenaPenon::sincronizar() {
         else if (evento == EV_CAMBIO_FASE_JEFE && avisoTiempo < 0.2f)
             avisoTiempo = 3.4f;
     }
+    if (sonidos) {
+        Rocket *rocket = nivel->jugador();
+        sonidos->eventos(eventos, rocket && rocket->estaFurioso());
+    }
 
     const std::vector<Entidad *> &lista = nivel->obtenerEntidades();
     QSet<Entidad *> vivas;
@@ -830,12 +896,20 @@ void EscenaPenon::sincronizar() {
             if (entidad->clase() == CLASE_PROYECTIL) {
                 auto *bala = static_cast<Proyectil *>(entidad);
                 QPixmap icono;
-                if (!bala->esDeRocket() && bala->esBombeado() && !balaCanon.isEmpty())
-                    icono = balaCanon.first().scaled(22, 22, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                if (!bala->esDeRocket() && bala->esBombeado()) {
+                    if (!balaCanon.isEmpty())
+                        icono = balaCanon.first().scaledToHeight(46, Qt::SmoothTransformation);
+                    if (icono.isNull())
+                        icono = balaBrillante(QColor(88, 78, 68), 40, false);
+                }
                 else if (bala->esDeRocket() && bala->esBombeado())
                     icono = circulo(QColor(86, 122, 62), 18);
+                else if (bala->esDeRocket() && bala->getDanio() > 30.f)
+                    icono = balaBrillante(QColor(255, 64, 18), 26, true);
+                else if (bala->esDeRocket())
+                    icono = balaBrillante(QColor(255, 214, 70), 22, false);
                 else
-                    icono = circulo(bala->esDeRocket() ? QColor(232, 196, 74) : QColor(176, 42, 36), bala->esDeRocket() ? 12 : 14);
+                    icono = balaBrillante(QColor(255, 48, 36), 18, false);
                 auto *punto = addPixmap(icono);
                 punto->setZValue(4);
                 dibujo = punto;
@@ -850,13 +924,18 @@ void EscenaPenon::sincronizar() {
         }
 
         if (entidad->clase() == CLASE_PROYECTIL) {
-            dibujo->setPos(entidad->getX(), entidad->getY());
+            if (auto *punto = dynamic_cast<QGraphicsPixmapItem *>(dibujo)) {
+                const QSize s = punto->pixmap().size();
+                dibujo->setPos(entidad->getCentroX() - s.width() / 2.0, entidad->getCentroY() - s.height() / 2.0);
+            } else {
+                dibujo->setPos(entidad->getX(), entidad->getY());
+            }
             auto *bala = static_cast<Proyectil *>(entidad);
             if (!bala->esDeRocket() && bala->esBombeado()) {
                 auto *aviso = avisos.value(entidad, nullptr);
                 if (!aviso) {
-                    aviso = addEllipse(-34, -8, 68, 16, QPen(QColor(186, 64, 42), 2), QBrush(QColor(186, 64, 42, 50)));
-                    aviso->setZValue(2.15);
+                    aviso = addEllipse(-48, -12, 96, 24, QPen(QColor(255, 140, 48), 3), QBrush(QColor(255, 90, 24, 150)));
+                    aviso->setZValue(3.6);
                     avisos.insert(entidad, aviso);
                 }
                 aviso->setPos(bala->getDestinoX(), nivel->getSuelo() - 4.f);
@@ -867,6 +946,21 @@ void EscenaPenon::sincronizar() {
                 continue;
             if (miraALaIzquierda(entidad))
                 cuadro = voltear(cuadro);
+            if (entidad->clase() == CLASE_RECOGIBLE) {
+                auto *reco = static_cast<Recogible *>(entidad);
+                if (!reco->estaDisponible()) {
+                    sprite->setVisible(false);
+                    continue;
+                }
+                sprite->setVisible(true);
+                const QPixmap puesto = cuadro.scaledToHeight(58, Qt::SmoothTransformation);
+                const float bob = std::sin(tiempo * 3.2f + entidad->getX() * 0.015f) * 6.f;
+                sprite->setPixmap(puesto);
+                sprite->setPos(entidad->getCentroX() - puesto.width() / 2.f,
+                               entidad->getY() + entidad->getAlto() - puesto.height() + bob);
+                sprite->setZValue(2.8);
+                continue;
+            }
             if (entidad->clase() == CLASE_ESTRUCTURA && static_cast<Estructura *>(entidad)->getTipo() == EST_PLATAFORMA) {
                 apoyarSuperficie(sprite, cuadro, entidad->getX() - 14.f, entidad->getY(), entidad->getAncho() + 28.f);
             } else {
@@ -962,6 +1056,30 @@ void EscenaPenon::sincronizar() {
         rafaga->hide();
     }
 
+    if (!tajo) {
+        tajo = addPixmap(tajoCuadro);
+        tajo->setZValue(3.7);
+        tajo->hide();
+    }
+    if (capitan && capitan->muestraSable() && !tajoCuadro.isNull()) {
+        QPixmap cuadro = tajoCuadro;
+        float cx = capitan->getCentroX();
+        float cy = capitan->getCentroY() - 18.f;
+        if (capitan->giratorioActivo()) {
+            capitan->posicionGiratorio(cx, cy);
+        } else {
+            const float dir = capitan->getDireccion() == 'L' ? -1.f : 1.f;
+            cx += dir * 46.f;
+            if (dir < 0.f)
+                cuadro = voltear(cuadro);
+        }
+        tajo->setPixmap(cuadro);
+        tajo->setPos(cx - cuadro.width() / 2.f, cy - cuadro.height() / 2.f);
+        tajo->show();
+    } else {
+        tajo->hide();
+    }
+
     if (capitan)
         capitanX = capitan->getX();
     dibujarHud();
@@ -982,7 +1100,7 @@ void EscenaPenon::dibujarHud() {
                 marcador->setZValue(40);
             }
             marcador->setPixmap(QPixmap::fromImage(lienzo));
-            marcador->setPos(camara + 14.f, 8.f);
+            marcador->setPos(camara + 52.f, 42.f);
         }
     }
 
@@ -1015,5 +1133,5 @@ void EscenaPenon::dibujarHud() {
         marcadorJefe->setZValue(40);
     }
     marcadorJefe->setPixmap(QPixmap::fromImage(jefe));
-    marcadorJefe->setPos(camara + kVistaAncho - jefe.width() - 16.f, 12.f);
+    marcadorJefe->setPos(camara + kVistaAncho - jefe.width() - 52.f, 42.f);
 }

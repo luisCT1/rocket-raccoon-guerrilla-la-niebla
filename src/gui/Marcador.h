@@ -20,6 +20,7 @@ struct PiezasHud {
     QRect cifraGranadas;
     QImage furia;
     QRect rellenoFuria;
+    QRect cifraFuria;
     QColor tapa;
 };
 

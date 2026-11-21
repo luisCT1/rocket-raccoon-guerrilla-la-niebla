@@ -11,6 +11,7 @@
         <file alias="sprites_jinete.png">recursos/nivel1/sprites_jinete_columnas_muy_separadas.png</file>
         <file alias="sprites_convoy.png">recursos/nivel1/sprites_convoy.png</file>
         <file alias="sprint_vidas_municion.png">recursos/nivel1/sprint_vidas_municion.png</file>
+        <file alias="sprint_iconos.png">recursos/nivel1/sprint_iconos_de_videojuego.png</file>
     </qresource>
     <qresource prefix="/nivel3">
         <file alias="vegetacion.png">recursos/nivel3/sprint_Vegetacion.png</file>
@@ -20,5 +21,42 @@
     </qresource>
     <qresource prefix="/menu">
         <file alias="fondo_menu.jpg">recursos/fondo_menu.jpg</file>
+    </qresource>
+    <qresource prefix="/sonidos">
+        <file alias="disparo.wav">recursos/sonidos/disparo.wav</file>
+        <file alias="enemigo.wav">recursos/sonidos/enemigo.wav</file>
+        <file alias="explosion.wav">recursos/sonidos/explosion.wav</file>
+        <file alias="furia.wav">recursos/sonidos/furia.wav</file>
+        <file alias="impulso.wav">recursos/sonidos/impulso.wav</file>
+        <file alias="salto.wav">recursos/sonidos/salto.wav</file>
+        <file alias="golpe.wav">recursos/sonidos/golpe.wav</file>
+        <file alias="caida.wav">recursos/sonidos/caida.wav</file>
+        <file alias="cuerpo.wav">recursos/sonidos/cuerpo.wav</file>
+        <file alias="correo.wav">recursos/sonidos/correo.wav</file>
+        <file alias="recogida.wav">recursos/sonidos/recogida.wav</file>
+        <file alias="alarma.wav">recursos/sonidos/alarma.wav</file>
+        <file alias="canon.wav">recursos/sonidos/canon.wav</file>
+        <file alias="madera.wav">recursos/sonidos/madera.wav</file>
+        <file alias="paso.wav">recursos/sonidos/paso.wav</file>
+        <file alias="agachar.wav">recursos/sonidos/agachar.wav</file>
+        <file alias="casco.wav">recursos/sonidos/casco.wav</file>
+        <file alias="sable.wav">recursos/sonidos/sable.wav</file>
+        <file alias="clic.wav">recursos/sonidos/clic.wav</file>
+        <file alias="viento.wav">recursos/sonidos/viento.wav</file>
+        <file alias="relincho.wav">recursos/sonidos/relincho.wav</file>
+        <file alias="reco_vida.wav">recursos/sonidos/reco_vida.wav</file>
+        <file alias="reco_municion.wav">recursos/sonidos/reco_municion.wav</file>
+        <file alias="reco_granada.wav">recursos/sonidos/reco_granada.wav</file>
+        <file alias="reco_furia.wav">recursos/sonidos/reco_furia.wav</file>
+        <file alias="voz_fuego.wav">recursos/sonidos/voz_fuego.wav</file>
+        <file alias="voz_rey.wav">recursos/sonidos/voz_rey.wav</file>
+        <file alias="voz_rinde.wav">recursos/sonidos/voz_rinde.wav</file>
+        <file alias="voz_penon.wav">recursos/sonidos/voz_penon.wav</file>
+        <file alias="voz_sable.wav">recursos/sonidos/voz_sable.wav</file>
+        <file alias="voz_canon.wav">recursos/sonidos/voz_canon.wav</file>
+        <file alias="fondo.mp3">recursos/sonidos/fondo.mp3</file>
+        <file alias="nivel1.mp3">recursos/sonidos/nivel1.mp3</file>
+        <file alias="nivel2.mp3">recursos/sonidos/nivel2.mp3</file>
+        <file alias="nivel3.mp3">recursos/sonidos/nivel3.mp3</file>
     </qresource>
 </RCC>

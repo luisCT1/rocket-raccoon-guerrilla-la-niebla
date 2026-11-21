@@ -15,6 +15,7 @@ class QGraphicsSimpleTextItem;
 class Entidad;
 class Juego;
 class NivelAsalto;
+class Sonido;
 
 class EscenaAsalto : public EscenaMision {
 public:
@@ -23,6 +24,7 @@ public:
 
     void pulsar(int tecla) override;
     void soltar(int tecla) override;
+    void mantener(int tecla) override;
     void apuntar(float x, float y) override;
     void avanzar(float dt) override;
 
@@ -30,6 +32,7 @@ public:
     QString textoHud() const override;
     QString mensajeFinal() const override;
     bool gano() const override;
+    bool enFuria() const override;
     bool acabo() const override;
 
 private:
@@ -75,6 +78,7 @@ private:
     float punteroX = 0.f;
     float punteroY = 0.f;
     bool hayApunte = false;
+    Sonido *sonidos = nullptr;
 };
 
 #endif

@@ -9,7 +9,7 @@ Entidad::Entidad(float x_, float y_, float ancho_, float alto_)
 }
 
 Entidad::~Entidad() {
-    //La entidad se queda con la propiedad de sus modelos
+
     for (ModeloFisico *m : modelos) {
         delete m;
     }

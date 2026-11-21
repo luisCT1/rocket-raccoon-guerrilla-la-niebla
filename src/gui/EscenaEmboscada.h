@@ -16,6 +16,7 @@ class QGraphicsPixmapItem;
 class Entidad;
 class Juego;
 class NivelEmboscada;
+class Sonido;
 
 class EscenaEmboscada : public EscenaMision {
 public:
@@ -24,6 +25,7 @@ public:
 
     void pulsar(int tecla) override;
     void soltar(int tecla) override;
+    void mantener(int tecla) override;
     void apuntar(float x, float y) override;
     void avanzar(float dt) override;
 
@@ -33,6 +35,7 @@ public:
     int porcentajeVida() const;
     bool acabo() const override;
     bool gano() const override;
+    bool enFuria() const override;
 
 private:
     struct CapaFondo {
@@ -79,6 +82,7 @@ private:
     QVector<QPixmap> disparar;
     QVector<QPixmap> impulso;
     QVector<QPixmap> furia;
+    QVector<QPixmap> agachar;
     QVector<QPixmap> lanzar;
     QVector<QPixmap> soldadoCamina;
     QVector<QPixmap> soldadoDispara;
@@ -87,6 +91,7 @@ private:
     QVector<QPixmap> rocketMuerte;
     QVector<QPixmap> soldadoMuere;
     QVector<QPixmap> jineteGalope;
+    QVector<QPixmap> jineteDispara;
     QVector<QPixmap> jineteBandera;
     QVector<QPixmap> jineteTrompeta;
     QVector<QPixmap> jineteMuere;
@@ -96,12 +101,15 @@ private:
     QVector<QPixmap> barrilQuieto;
     QVector<QPixmap> barrilEstalla;
     QPixmap puenteQuieto;
+    QVector<QPixmap> iconos;
 
     PiezasHud piezasHud;
     QGraphicsPixmapItem *marcador = nullptr;
     QVector<Caida> caidas;
 
     QSet<int> teclas;
+    Sonido *sonidos = nullptr;
+    bool convoyHerido = false;
     float tiempo = 0.f;
     float granadaMuestra = 0.f;
     float punteroX = 0.f;

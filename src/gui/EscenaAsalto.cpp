@@ -7,6 +7,7 @@
 #include "NivelAsalto.h"
 #include "Proyectil.h"
 #include "Rocket.h"
+#include "Sonido.h"
 
 #include <QFont>
 #include <QGraphicsEllipseItem>
@@ -56,6 +57,25 @@ QVector<QPixmap> cuadros(const QPixmap &hoja, std::initializer_list<QRect> zonas
             salida.push_back(cuadro);
     }
     return salida;
+}
+
+QPixmap balaBrillante(const QColor &color, int diametro, bool furia) {
+    const int lado = diametro + 10;
+    QPixmap mapa(lado, lado);
+    mapa.fill(Qt::transparent);
+    QPainter pintor(&mapa);
+    pintor.setRenderHint(QPainter::Antialiasing);
+    pintor.setPen(Qt::NoPen);
+    pintor.setBrush(furia ? QColor(255, 70, 16, 120) : QColor(color.red(), color.green(), color.blue(), 90));
+    pintor.drawEllipse(0, 0, lado - 1, lado - 1);
+    pintor.setPen(QPen(furia ? QColor(70, 8, 4) : QColor(36, 18, 6), 2));
+    pintor.setBrush(color);
+    pintor.drawEllipse(5, 5, diametro - 1, diametro - 1);
+    pintor.setPen(Qt::NoPen);
+    pintor.setBrush(furia ? QColor(255, 214, 120) : QColor(255, 248, 214));
+    const int nucleo = qMax(6, diametro / 3);
+    pintor.drawEllipse(5 + (diametro - nucleo) / 2, 5 + (diametro - nucleo) / 2, nucleo, nucleo);
+    return mapa;
 }
 
 QPixmap escalarFijo(const QPixmap &cuadro, float alto, float altoFuente) {
@@ -135,6 +155,7 @@ QPixmap pintarTorre() {
 EscenaAsalto::EscenaAsalto() {
     setSceneRect(0, 0, 1600, 1200);
     setBackgroundBrush(QColor(78, 112, 68));
+    sonidos = new Sonido(this);
     cargarSprites();
     juego = new Juego();
     juego->iniciarNivel(NIVEL_ASALTO, DIF_NORMAL);
@@ -145,6 +166,7 @@ EscenaAsalto::EscenaAsalto() {
 }
 
 EscenaAsalto::~EscenaAsalto() {
+    delete sonidos;
     delete juego;
 }
 
@@ -235,6 +257,10 @@ void EscenaAsalto::soltar(int tecla) {
     teclas.remove(tecla);
 }
 
+void EscenaAsalto::mantener(int tecla) {
+    teclas.insert(tecla);
+}
+
 void EscenaAsalto::apuntar(float x, float y) {
     punteroX = x;
     punteroY = y;
@@ -319,6 +345,11 @@ QString EscenaAsalto::mensajeFinal() const {
     return QStringLiteral("Misión fallida\nTe derrotaron en el patio.");
 }
 
+bool EscenaAsalto::enFuria() const {
+    Rocket *rocket = nivel ? nivel->jugador() : nullptr;
+    return rocket && rocket->estaFurioso();
+}
+
 bool EscenaAsalto::gano() const {
     return nivel && nivel->fueGanado();
 }
@@ -352,8 +383,8 @@ QPixmap EscenaAsalto::cuadroDe(Entidad *entidad) const {
             indice = int(tiempo * 8.f);
     } else if (entidad->clase() == CLASE_ENEMIGO) {
         auto *enemigo = static_cast<Enemigo *>(entidad);
-        lista = enemigo->estadoVisual() == 1 && !soldadoDispara.isEmpty() ? &soldadoDispara : &soldadoCamina;
-        indice = enemigo->estadoVisual() == 0 ? 0 : int(tiempo * 8.f);
+        lista = enemigo->llevaArma() && !soldadoDispara.isEmpty() ? &soldadoDispara : &soldadoCamina;
+        indice = enemigo->llevaArma() ? int(tiempo * 8.f) : 0;
     }
     if (!lista || lista->isEmpty())
         return {};
@@ -438,21 +469,23 @@ void EscenaAsalto::sincronizar() {
             sprite = addPixmap(QPixmap());
             if (entidad->clase() == CLASE_PROYECTIL) {
                 auto *bala = static_cast<Proyectil *>(entidad);
-                const int lado = bala->esBombeado() ? 16 : 10;
-                QPixmap punto(lado, lado);
-                punto.fill(Qt::transparent);
-                QPainter p(&punto);
-                p.setRenderHint(QPainter::Antialiasing);
-                p.setPen(Qt::NoPen);
-                p.setBrush(bala->esDeRocket() ? QColor(232, 196, 74) : QColor(176, 42, 36));
-                p.drawEllipse(0, 0, lado - 1, lado - 1);
+                QPixmap punto;
+                if (bala->esBombeado())
+                    punto = balaBrillante(QColor(72, 64, 56), 40, false);
+                else if (bala->esDeRocket() && bala->getDanio() > 30.f)
+                    punto = balaBrillante(QColor(255, 64, 18), 26, true);
+                else if (bala->esDeRocket())
+                    punto = balaBrillante(QColor(255, 214, 70), 22, false);
+                else
+                    punto = balaBrillante(QColor(255, 48, 36), 18, false);
                 sprite->setPixmap(punto);
                 sprite->setZValue(4);
             }
             piezas.insert(entidad, sprite);
         }
         if (entidad->clase() == CLASE_PROYECTIL) {
-            sprite->setPos(entidad->getX(), entidad->getY());
+            const QSize s = sprite->pixmap().size();
+            sprite->setPos(entidad->getCentroX() - s.width() / 2.0, entidad->getCentroY() - s.height() / 2.0);
             continue;
         }
         colocar(entidad, sprite);
@@ -464,6 +497,12 @@ void EscenaAsalto::sincronizar() {
         QGraphicsPixmapItem *sprite = piezas.take(entidad);
         removeItem(sprite);
         delete sprite;
+    }
+    std::vector<short> eventos;
+    nivel->tomarEventos(eventos);
+    if (sonidos) {
+        Rocket *rocket = nivel->jugador();
+        sonidos->eventos(eventos, rocket && rocket->estaFurioso());
     }
 }
 
@@ -481,5 +520,5 @@ void EscenaAsalto::dibujarHud() {
         marcador->setZValue(40);
     }
     marcador->setPixmap(QPixmap::fromImage(lienzo));
-    marcador->setPos(camX + 14.f, camY + 8.f);
+    marcador->setPos(camX + 52.f, camY + 42.f);
 }

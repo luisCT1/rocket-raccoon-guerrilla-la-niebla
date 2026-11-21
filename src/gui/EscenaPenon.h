@@ -17,6 +17,7 @@ class QGraphicsPixmapItem;
 class Entidad;
 class Juego;
 class NivelPenon;
+class Sonido;
 
 class EscenaPenon : public EscenaMision {
 public:
@@ -25,6 +26,7 @@ public:
 
     void pulsar(int tecla) override;
     void soltar(int tecla) override;
+    void mantener(int tecla) override;
     void apuntar(float x, float y) override;
     void avanzar(float dt) override;
 
@@ -32,6 +34,7 @@ public:
     QString textoHud() const override;
     QString mensajeFinal() const override;
     bool gano() const override;
+    bool enFuria() const override;
     bool acabo() const override;
 
 private:
@@ -78,6 +81,7 @@ private:
     QVector<QPixmap> disparar;
     QVector<QPixmap> impulso;
     QVector<QPixmap> furia;
+    QVector<QPixmap> agachar;
     QVector<QPixmap> lanzar;
     QVector<QPixmap> rocketDanio;
     QVector<QPixmap> rocketMuerte;
@@ -102,6 +106,7 @@ private:
     QPixmap arco;
     QPixmap ruina;
     QPixmap arbolCima;
+    QVector<QPixmap> iconos;
     QVector<QPixmap> arboles;
     QVector<QPixmap> helechos;
     QVector<QPixmap> rocas;
@@ -124,6 +129,8 @@ private:
     QGraphicsPixmapItem *bandera = nullptr;
     QGraphicsEllipseItem *meta = nullptr;
     QGraphicsPixmapItem *rafaga = nullptr;
+    QGraphicsPixmapItem *tajo = nullptr;
+    QPixmap tajoCuadro;
 
     QSet<int> teclas;
     float tiempo = 0.f;
@@ -134,6 +141,7 @@ private:
     float capitanX = 0.f;
     short faseVista = 1;
     QString avisoFase;
+    Sonido *sonidos = nullptr;
 };
 
 #endif

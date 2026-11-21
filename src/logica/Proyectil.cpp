@@ -34,9 +34,15 @@ short Proyectil::clase() const {
 }
 
 void Proyectil::alChocar(Entidad &otra) {
-    if (explotado || bombeado) return; //el bombeado pasa por encima hasta llegar a su destino
+    if (explotado) return;
 
     const short c = otra.clase();
+    if (bombeado) {
+
+        if (!deRocket && c == CLASE_ROCKET)
+            explotar();
+        return;
+    }
     if (deRocket) {
         const bool rival = c == CLASE_ENEMIGO || c == CLASE_CAPITAN || c == CLASE_ESTRUCTURA;
         if (rival && otra.esSolida()) explotar();
@@ -46,7 +52,7 @@ void Proyectil::alChocar(Entidad &otra) {
 }
 
 bool Proyectil::aterrizo() const {
-    //Y crece hacia abajo: toca el piso cuando su borde inferior llega a ySuelo
+
     return edad >= tiempoVida || y + alto >= ySuelo;
 }
 

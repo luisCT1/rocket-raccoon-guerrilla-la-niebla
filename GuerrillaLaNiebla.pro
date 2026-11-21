@@ -1,4 +1,4 @@
-QT += core gui widgets
+QT += core gui widgets multimedia
 
 CONFIG += c++17
 CONFIG -= debug_and_release
@@ -24,6 +24,7 @@ HEADERS += \
     src/logica/Entidad.h \
     src/logica/Proyectil.h \
     src/logica/Rocket.h \
+    src/logica/Recogible.h \
     src/logica/Enemigo.h \
     src/logica/Estructura.h \
     src/logica/Nivel.h \
@@ -39,6 +40,7 @@ HEADERS += \
     src/gui/MenuInicio.h \
     src/gui/EscenaMision.h \
     src/gui/Marcador.h \
+    src/gui/Sonido.h \
     src/gui/EscenaEmboscada.h \
     src/gui/EscenaAsalto.h \
     src/gui/EscenaPenon.h \
@@ -53,6 +55,7 @@ SOURCES += \
     src/logica/Entidad.cpp \
     src/logica/Proyectil.cpp \
     src/logica/Rocket.cpp \
+    src/logica/Recogible.cpp \
     src/logica/Enemigo.cpp \
     src/logica/Estructura.cpp \
     src/logica/Nivel.cpp \
@@ -65,6 +68,7 @@ SOURCES += \
     src/gui/HojaSprites.cpp \
     src/gui/MenuInicio.cpp \
     src/gui/Marcador.cpp \
+    src/gui/Sonido.cpp \
     src/gui/EscenaEmboscada.cpp \
     src/gui/EscenaAsalto.cpp \
     src/gui/EscenaPenon.cpp \

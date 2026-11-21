@@ -29,10 +29,15 @@ private:
     float canonX;
     float canonY;
     bool cambioFase;
+    bool sablePendiente;
+    bool sableSonado;
+    bool vozPendiente;
+    float vozEspera;
     short inicioAccion;
     MovCircular *giro;
     float factorVelocidad;
     bool derrotado;
+    bool encontrado;
 
     short estimuloVisible;
     float intensidadEstimulo;
@@ -64,6 +69,7 @@ private:
 
     void finalizarAccion();
     void moverse(float dt);
+    void pedirVoz();
     void recalcularBonos();
 
 public:
@@ -84,16 +90,20 @@ public:
     void confirmarGolpe();
     bool consumirOrdenCanon(float &objX, float &objY);
     bool consumirCambioFase();
+    bool consumirSable();
+    bool consumirVoz();
     short consumirInicioAccion();
     void resultadoCanon(bool acerto);
     void fijarCanonDisponible(bool disponible);
 
     short getFase() const;
     bool estaDerrotado() const;
+    bool estaPersiguiendo() const;
     float getVidaMax() const;
     bool giratorioActivo() const;
     void posicionGiratorio(float &gx, float &gy) const;
     bool trombaActiva() const;
+    bool muestraSable() const;
     float radioTromba() const;
 
     void fijarDificultad(short nivel);

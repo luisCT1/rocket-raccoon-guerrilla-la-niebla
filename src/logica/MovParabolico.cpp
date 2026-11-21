@@ -14,7 +14,6 @@ MovParabolico *MovParabolico::haciaObjetivo(float x0, float y0, float xObj, floa
     if (tiempoVuelo <= 0.f)
         throw std::invalid_argument("MovParabolico: el tiempo de vuelo debe ser mayor que 0");
 
-    //Se despejan las velocidades que hacen que en t = tiempoVuelo la posición sea el objetivo
     const float vx = (xObj - x0) / tiempoVuelo;
     const float vy = (yObj - y0 - 0.5f * g * tiempoVuelo * tiempoVuelo) / tiempoVuelo;
     return new MovParabolico(x0, y0, std::sqrt(vx * vx + vy * vy), std::atan2(-vy, vx), g);
@@ -31,7 +30,7 @@ void MovParabolico::posicion(float &outX, float &outY) const {
 }
 
 bool MovParabolico::aterrizo(float ySuelo) const {
-    //Y crece hacia abajo: aterriza cuando llega al suelo o lo pasa
+
     const float y = y0 + velY * t + 0.5f * g * t * t;
     return y >= ySuelo;
 }

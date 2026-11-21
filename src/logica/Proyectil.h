@@ -3,11 +3,6 @@
 
 #include "Entidad.h"
 
-// Bala, granada o bala de cañón.
-// Directo (bala): explota al tocar a un rival o al llegar al suelo.
-// Bombeado (granada, cañón): vuela por encima de todo y explota al llegar a su destino.
-// El daño no lo reparte el proyectil: al explotar, el Nivel daña a lo que esté dentro del radio.
-
 class Proyectil : public Entidad {
 protected:
     float danio;
@@ -15,15 +10,15 @@ protected:
     bool deRocket;
     bool explotado;
     bool bombeado;
-    bool explosionPendiente; //el Nivel todavía no ha repartido el daño de esta explosión
+    bool explosionPendiente;
     float tiempoVida;
     float edad;
     float ySuelo;
-    float destinoX; //dónde va a caer (centro). Sirve para dibujar el aviso en el piso
+    float destinoX;
     float destinoY;
 
 public:
-    //Lanza std::invalid_argument si radioExplosion es negativo
+
     Proyectil(float x, float y, float radioExplosion, bool deRocket);
     ~Proyectil() override;
 
@@ -33,7 +28,7 @@ public:
 
     bool aterrizo() const;
     void explotar();
-    bool consumirExplosion(); //true una sola vez, justo después de explotar
+    bool consumirExplosion();
 
     void fijarDanio(float d);
     void fijarBombeado(bool b);

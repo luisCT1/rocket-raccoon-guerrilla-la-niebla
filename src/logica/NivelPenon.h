@@ -19,6 +19,7 @@ private:
 
     void seguirDisparos();
     void moverCamara(float dt);
+    void seguirCapitan();
 
 protected:
     void alBorrar(Entidad *e) override;

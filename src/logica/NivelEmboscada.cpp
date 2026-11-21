@@ -2,36 +2,38 @@
 #include "Rocket.h"
 #include "Enemigo.h"
 #include "Estructura.h"
+#include "Recogible.h"
 #include "MovOscilatorio.h"
 #include "Eventos.h"
 
 namespace {
-//Mapa del nivel (px). Cambiar la disposición es cambiar estos números.
+
 constexpr float ANCHO_MUNDO = 4000.f;
 constexpr float ALTO_MUNDO = 720.f;
 constexpr float ANCHO_VISTA = 1280.f;
-//El piso queda más arriba para que el risco del camino se vea entero en la pantalla.
+
 constexpr float SUELO = 548.f;
-constexpr float HUECO_INI = 1500.f;       //barranco
+constexpr float HUECO_INI = 1500.f;
 constexpr float HUECO_FIN = 1920.f;
-constexpr float PUENTE_X = 1590.f;        //el tablero deja 90 px de vacío a cada lado: hay que saltar
+constexpr float PUENTE_X = 1590.f;
 constexpr float PUENTE_AMPLITUD = 45.f;
 constexpr float PUENTE_OMEGA = 1.6f;
 constexpr float INICIO_X = 100.f;
+constexpr float V_CONVOY = 34.f;
+constexpr float SEPARACION_BARRIL = 100.f;
 const float CARRETA_X[3] = { 2400.f, 2900.f, 3400.f };
-const float BARRIL_X[3] = { 2500.f, 3000.f, 3500.f }; //pegado a su carreta
+const float BARRIL_X[3] = { 2500.f, 3000.f, 3500.f };
 const float SOLDADO_X[6] = { 2250.f, 2620.f, 2760.f, 3120.f, 3260.f, 3620.f };
-constexpr float LIMITE_IZQ = 1940.f;      //los soldados no se meten al barranco
+constexpr float LIMITE_IZQ = 1940.f;
 constexpr float LIMITE_DER = 3950.f;
-constexpr float FIN_CAMINO = 3900.f;      //si el correo llega aquí, escapó
+constexpr float META_CONVOY = INICIO_X;
 constexpr float RADIO_BARRIL = 110.f;
-constexpr float DANIO_BARRIL = 120.f;      //más que la resistencia de una carreta
-constexpr short MAX_SOLDADOS = 8;         //tope de soldados vivos
-constexpr float ZONA_OLEADAS = 1300.f;    //las oleadas empiezan cuando Rocket se acerca al puente
+constexpr float DANIO_BARRIL = 120.f;
+constexpr short MAX_SOLDADOS = 8;
+constexpr float ZONA_OLEADAS = 1300.f;
 constexpr float VISION_ALERTA = 700.f;
 constexpr float SEGUIMIENTO_CAMARA = 5.f;
 
-//Deja la entidad parada sobre el piso
 void apoyarEnSuelo(Entidad *e) {
     e->setPosicion(e->getX(), SUELO - e->getAlto());
 }
@@ -42,6 +44,9 @@ NivelEmboscada::NivelEmboscada()
       partesRestantes(3),
       correoEscapo(false),
       correoDetenido(false),
+      convoyPaso(false),
+      salidaCorreo(CARRETA_X[2]),
+      crujido(0.f),
       intervaloOleada(6.f),
       tiempoOleada(0.f),
       puente(nullptr),
@@ -59,7 +64,6 @@ NivelEmboscada::NivelEmboscada()
     apoyarEnSuelo(r);
     agregarEntidad(r);
 
-    //Puente colgante: el modelo oscilatorio mueve su borde superior alrededor del nivel del piso
     puente = new Estructura(EST_PUENTE, PUENTE_X, SUELO);
     puente->agregarModelo(new MovOscilatorio(SUELO, PUENTE_AMPLITUD, PUENTE_OMEGA, 0.f, true, PUENTE_X));
     agregarEntidad(puente);
@@ -81,9 +85,15 @@ NivelEmboscada::NivelEmboscada()
         Enemigo *s = new Enemigo(puestoX[i], 0.f);
         apoyarEnSuelo(s);
         s->fijarAspecto(puestoAspecto[i]);
-        s->fijarLimites(LIMITE_IZQ, LIMITE_DER);
+        s->fijarMarcha(true);
+        s->fijarLimites(0.f, LIMITE_DER);
         agregarEntidad(s);
     }
+
+    const float recoX[] = { 620.f, 1080.f, 1360.f, 2080.f, 2680.f, 3220.f, 3680.f };
+    const short recoT[] = { RECO_MUNICION, RECO_GRANADA, RECO_FURIA, RECO_VIDA, RECO_MUNICION, RECO_GRANADA, RECO_FURIA };
+    for (short i = 0; i < 7; ++i)
+        agregarEntidad(new Recogible(recoT[i], recoX[i], SUELO - 186.f));
 }
 
 NivelEmboscada::~NivelEmboscada() {}
@@ -91,8 +101,23 @@ NivelEmboscada::~NivelEmboscada() {}
 void NivelEmboscada::actualizar(float dt) {
     if (terminado) return;
     Nivel::actualizar(dt);
+    avanzarConvoy(dt);
 
-    //Barril destruido: explota y daña lo que tenga cerca (la carreta, soldados, otro barril)
+    bool rueda = false;
+    for (short i = 0; i < 3; ++i) {
+        if (carretas[i] && carretas[i]->estaViva() && !carretas[i]->estaDestruida())
+            rueda = true;
+    }
+    if (rueda) {
+        crujido += dt;
+        if (crujido >= 1.1f) {
+            crujido = 0.f;
+            emitirEvento(EV_CARRETA);
+        }
+    } else {
+        crujido = 0.f;
+    }
+
     for (short i = 0; i < 3; ++i) {
         if (barriles[i] && barriles[i]->consumirDestruccion()) {
             emitirEvento(EV_EXPLOSION);
@@ -102,6 +127,7 @@ void NivelEmboscada::actualizar(float dt) {
     for (short i = 0; i < 3; ++i) {
         if (carretas[i] && carretas[i]->consumirDestruccion()) {
             --partesRestantes;
+            salidaCorreo = carretas[i]->getX();
             emitirEvento(EV_TAREA_COMPLETADA);
         }
     }
@@ -120,7 +146,7 @@ void NivelEmboscada::actualizar(float dt) {
 
     moverCamara(dt);
 
-    if (rocket->getVidas() <= 0 || correoEscapo) terminar(false);
+    if (rocket->getVidas() <= 0 || correoEscapo || convoyPaso) terminar(false);
     else if (partesRestantes <= 0 && correoDetenido) terminar(true);
 }
 
@@ -129,12 +155,39 @@ void NivelEmboscada::revisarCorreo() {
     if (!correo->estaViva()) {
         correoDetenido = true;
         correo = nullptr;
-    } else if (correo->getX() >= FIN_CAMINO) {
+    } else if (correo->getX() <= META_CONVOY) {
         correoEscapo = true;
     }
 }
 
-//El Nivel va a borrar una entidad: si es el correo, se suelta el puntero antes
+void NivelEmboscada::asentarEnCamino(Entidad *e) {
+    if (!e || !e->estaViva()) return;
+    float ny = SUELO - e->getAlto();
+    const float cx = e->getCentroX();
+    if (puente && cx > HUECO_INI && cx < HUECO_FIN)
+        ny = puente->getY() - e->getAlto();
+    e->setPosicion(e->getX(), ny);
+}
+
+void NivelEmboscada::avanzarConvoy(float dt) {
+    const float paso = V_CONVOY * dt;
+    for (short i = 0; i < 3; ++i) {
+        Estructura *carreta = carretas[i];
+        if (!carreta || !carreta->estaViva() || carreta->estaDestruida()) continue;
+        carreta->setPosicion(carreta->getX() - paso, carreta->getY());
+        asentarEnCamino(carreta);
+        if (carreta->getX() <= META_CONVOY)
+            convoyPaso = true;
+        Estructura *barril = barriles[i];
+        if (barril && barril->estaViva() && !barril->estaDestruida())
+            barril->setPosicion(carreta->getX() + SEPARACION_BARRIL, carreta->getY() + carreta->getAlto() - barril->getAlto());
+    }
+    for (Entidad *e : obtenerEntidades()) {
+        if (e->clase() == CLASE_ENEMIGO && e->estaViva())
+            asentarEnCamino(e);
+    }
+}
+
 void NivelEmboscada::alBorrar(Entidad *e) {
     if (e == correo) {
         correoDetenido = true;
@@ -149,11 +202,12 @@ void NivelEmboscada::alBorrar(Entidad *e) {
 }
 
 void NivelEmboscada::soltarCorreo() {
-    correo = new Enemigo(CARRETA_X[2] + 60.f, 0.f);
+    correo = new Enemigo(salidaCorreo, 0.f);
     apoyarEnSuelo(correo);
     correo->fijarCorreo(true);
+    correo->fijarMarcha(true);
     correo->fijarAspecto(2);
-    correo->fijarLimites(LIMITE_IZQ, LIMITE_DER);
+    correo->fijarLimites(0.f, LIMITE_DER);
     agregarEntidad(correo);
     emitirEvento(EV_CORREO_HUYE);
 }
@@ -161,7 +215,6 @@ void NivelEmboscada::soltarCorreo() {
 void NivelEmboscada::generarOleada() {
     if (contarVivos(CLASE_ENEMIGO) >= MAX_SOLDADOS) return;
 
-    //Entra por el borde derecho de la pantalla, siempre del otro lado del barranco
     float sx = posCamara + ANCHO_VISTA + 40.f;
     if (sx < LIMITE_IZQ + 20.f) sx = LIMITE_IZQ + 20.f;
     if (sx > LIMITE_DER) sx = LIMITE_DER;
@@ -169,13 +222,14 @@ void NivelEmboscada::generarOleada() {
     Enemigo *s = new Enemigo(sx, 0.f);
     apoyarEnSuelo(s);
     s->fijarAspecto(static_cast<short>(int(sx / 90.f) % 5));
-    s->fijarLimites(LIMITE_IZQ, LIMITE_DER);
+    s->fijarMarcha(true);
+    s->fijarLimites(0.f, LIMITE_DER);
     s->fijarAlcanceVision(VISION_ALERTA);
     agregarEntidad(s);
 }
 
 void NivelEmboscada::moverCamara(float dt) {
-    //La cámara sigue a Rocket sin pegarse del todo. Depende de dt, no de los cuadros por segundo.
+
     const float objetivo = rocket->getX() - 400.f;
     float k = SEGUIMIENTO_CAMARA * dt;
     if (k > 1.f) k = 1.f;
@@ -193,5 +247,6 @@ bool NivelEmboscada::correoEnFuga() const { return correo != nullptr; }
 bool NivelEmboscada::getCorreoEscapo() const { return correoEscapo; }
 float NivelEmboscada::getHuecoInicio() const { return HUECO_INI; }
 float NivelEmboscada::getHuecoFin() const { return HUECO_FIN; }
-float NivelEmboscada::getFinCamino() const { return FIN_CAMINO; }
+float NivelEmboscada::getFinCamino() const { return META_CONVOY; }
+bool NivelEmboscada::getConvoyPaso() const { return convoyPaso; }
 Estructura *NivelEmboscada::getPuente() const { return puente; }

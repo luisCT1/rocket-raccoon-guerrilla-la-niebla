@@ -11,6 +11,7 @@ public:
 
     virtual void pulsar(int tecla) = 0;
     virtual void soltar(int tecla) = 0;
+    virtual void mantener(int tecla) = 0;
     virtual void apuntar(float x, float y) = 0;
     virtual void avanzar(float dt) = 0;
 
@@ -19,6 +20,7 @@ public:
     virtual QString mensajeFinal() const = 0;
     virtual bool gano() const = 0;
     virtual bool acabo() const = 0;
+    virtual bool enFuria() const { return false; }
 };
 
 #endif

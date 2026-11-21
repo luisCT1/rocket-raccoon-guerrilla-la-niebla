@@ -20,7 +20,22 @@ enum EventoJuego : short {
     EV_ATAQUE_GIRATORIO,
     EV_TROMBA,
     EV_VICTORIA,
-    EV_DERROTA
+    EV_DERROTA,
+    EV_RECOGIDA,
+    EV_PASO,
+    EV_AGACHARSE,
+    EV_CASCO,
+    EV_MARCHA,
+    EV_CARRETA,
+    EV_ATERRIZAJE,
+    EV_SABLE,
+    EV_VIENTO,
+    EV_VOZ,
+    EV_RELINCHO,
+    EV_RECO_VIDA,
+    EV_RECO_MUNICION,
+    EV_RECO_GRANADA,
+    EV_RECO_FURIA
 };
 
 enum NivelDificultad : short { DIF_FACIL = 0, DIF_NORMAL = 1, DIF_DIFICIL = 2 };

@@ -27,25 +27,30 @@ const char *kBoton =
 
 MenuInicio::MenuInicio(QWidget *parent) : QWidget(parent) {
     botonCampana = new QPushButton(QStringLiteral("Campaña"));
+    botonJugar = new QPushButton(QStringLiteral("Jugar un nivel"));
     botonEmboscada = new QPushButton(QStringLiteral("Nivel 1. Emboscada"));
     botonAsalto = new QPushButton(QStringLiteral("Nivel 2. Asalto"));
     botonPenon = new QPushButton(QStringLiteral("Nivel 3. El Peñón"));
+    botonVolver = new QPushButton(QStringLiteral("Volver"));
     botonSalir = new QPushButton(QStringLiteral("Salir"));
-    const QPushButton *botones[] = {botonCampana, botonEmboscada, botonAsalto, botonPenon, botonSalir};
+    const QPushButton *botones[] = {botonCampana, botonJugar, botonEmboscada, botonAsalto, botonPenon, botonVolver, botonSalir};
     for (const QPushButton *boton : botones) {
         const_cast<QPushButton *>(boton)->setStyleSheet(QString::fromLatin1(kBoton));
         const_cast<QPushButton *>(boton)->setCursor(Qt::PointingHandCursor);
         const_cast<QPushButton *>(boton)->setFocusPolicy(Qt::NoFocus);
+        connect(const_cast<QPushButton *>(boton), &QPushButton::clicked, this, &MenuInicio::pulso);
     }
 
     auto *columna = new QVBoxLayout();
     columna->setSpacing(8);
     columna->addWidget(botonCampana);
+    columna->addWidget(botonJugar);
     columna->addWidget(botonEmboscada);
     columna->addWidget(botonAsalto);
     columna->addWidget(botonPenon);
+    columna->addWidget(botonVolver);
     columna->addWidget(botonSalir);
-    auto *atajo = new QLabel(QStringLiteral("Enter: campaña completa"));
+    atajo = new QLabel(QStringLiteral("Enter: campaña completa"));
     atajo->setAlignment(Qt::AlignRight);
     atajo->setStyleSheet(QStringLiteral(
         "color: #f4efe2; font-size: 13px; font-family: Georgia; background: rgba(22, 32, 24, 170); padding: 2px 8px;"));
@@ -61,10 +66,41 @@ MenuInicio::MenuInicio(QWidget *parent) : QWidget(parent) {
     caja->addLayout(fila);
 
     connect(botonCampana, &QPushButton::clicked, this, &MenuInicio::campana);
+    connect(botonJugar, &QPushButton::clicked, this, &MenuInicio::mostrarNiveles);
     connect(botonEmboscada, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_EMBOSCADA); });
     connect(botonAsalto, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_ASALTO); });
     connect(botonPenon, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_PENON); });
+    connect(botonVolver, &QPushButton::clicked, this, &MenuInicio::mostrarRaiz);
     connect(botonSalir, &QPushButton::clicked, this, &MenuInicio::salir);
+    mostrarRaiz();
+}
+
+bool MenuInicio::estaEligiendoNivel() const {
+    return eligiendoNivel;
+}
+
+void MenuInicio::mostrarRaiz() {
+    eligiendoNivel = false;
+    botonCampana->show();
+    botonJugar->show();
+    botonSalir->show();
+    atajo->show();
+    botonEmboscada->hide();
+    botonAsalto->hide();
+    botonPenon->hide();
+    botonVolver->hide();
+}
+
+void MenuInicio::mostrarNiveles() {
+    eligiendoNivel = true;
+    botonCampana->hide();
+    botonJugar->hide();
+    botonSalir->hide();
+    atajo->hide();
+    botonEmboscada->show();
+    botonAsalto->show();
+    botonPenon->show();
+    botonVolver->show();
 }
 
 void MenuInicio::paintEvent(QPaintEvent *evento) {

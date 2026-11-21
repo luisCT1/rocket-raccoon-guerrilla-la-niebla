@@ -2,22 +2,75 @@
 #include "Entidad.h"
 #include "Rocket.h"
 #include "Enemigo.h"
+#include "Estructura.h"
 #include "Proyectil.h"
+#include "Recogible.h"
 #include "Eventos.h"
 
 namespace {
-constexpr float MARGEN_PIES = 8.f;        //los pies son un poco más angostos que el cuerpo
+constexpr float MARGEN_PIES = 8.f;
 constexpr float TOLERANCIA_APOYO = 14.f;
 constexpr float FURIA_POR_ENEMIGO = 0.25f;
-constexpr float RADIO_MIN_EXPLOSION = 30.f; //por debajo es un impacto de bala: no suena a explosión
+constexpr float RADIO_MIN_EXPLOSION = 30.f;
 constexpr float MARGEN_MUNDO = 200.f;
+
+void cajaDeTiro(const Entidad *e, float &x0, float &y0, float &x1, float &y1) {
+    x0 = e->getX();
+    y0 = e->getY();
+    x1 = x0 + e->getAncho();
+    y1 = y0 + e->getAlto();
+    const short c = e->clase();
+    if (c == CLASE_ENEMIGO) {
+        const Enemigo *en = static_cast<const Enemigo *>(e);
+        const bool jinete = en->esMontado();
+        y0 -= jinete ? 74.f : 56.f;
+        x0 -= jinete ? 28.f : 18.f;
+        x1 += jinete ? 28.f : 18.f;
+    } else if (c == CLASE_CAPITAN) {
+        y0 -= 70.f;
+        x0 -= 28.f;
+        x1 += 28.f;
+    } else if (c == CLASE_ROCKET) {
+        y0 -= 48.f;
+        x0 -= 12.f;
+        x1 += 12.f;
+    } else if (c == CLASE_ESTRUCTURA) {
+        const Estructura *pieza = static_cast<const Estructura *>(e);
+        if (pieza->getTipo() == EST_CARRETA) {
+            y0 -= 70.f;
+            x0 -= 10.f;
+            x1 += 10.f;
+        } else if (pieza->getTipo() == EST_BARRIL) {
+            y0 -= 26.f;
+            x0 -= 8.f;
+            x1 += 8.f;
+        }
+    } else if (c == CLASE_PROYECTIL) {
+        const Proyectil *p = static_cast<const Proyectil *>(e);
+        const float holgura = (p->esBombeado() && !p->esDeRocket()) ? 18.f : 6.f;
+        x0 -= holgura;
+        y0 -= holgura;
+        x1 += holgura;
+        y1 += holgura;
+    }
+}
+
+bool seTocan(const Entidad *a, const Entidad *b, bool amplio) {
+    if (!a->estaViva() || !b->estaViva()) return false;
+    if (!amplio) return a->colisiona(b);
+    float ax0, ay0, ax1, ay1, bx0, by0, bx1, by1;
+    cajaDeTiro(a, ax0, ay0, ax1, ay1);
+    cajaDeTiro(b, bx0, by0, bx1, by1);
+    return ax0 < bx1 && ax1 > bx0 && ay0 < by1 && ay1 > by0;
+}
 }
 
 Nivel::Nivel()
     : tiempo(0.f), terminado(false), ganado(false), rocket(nullptr),
       anchoMundo(1280.f), altoMundo(720.f), cenital(false), ySuelo(1.0e9f), huecoIni(0.f), huecoFin(0.f),
-      camaraX(0.f), apoyo(nullptr), seguroX(0.f), seguroY(0.f) {
-    //Se reserva una sola vez: agregar entidades durante el juego no mueve el vector de sitio
+      camaraX(0.f), apoyo(nullptr), seguroX(0.f), seguroY(0.f),
+      relojCasco(0.f), relojMarcha(0.f), silencioCasco(0.f), relojRelincho(0.f) {
+
     entidades.reserve(128);
     eventos.reserve(32);
     plataformas.reserve(8);
@@ -37,7 +90,6 @@ void Nivel::actualizar(float dt) {
     eliminarMuertas();
     tiempo += dt;
 
-    //Por índice y con el tamaño guardado: lo que se agregue en este cuadro se actualiza en el siguiente
     for (std::size_t i = 0, n = entidades.size(); i < n; ++i) {
         if (entidades[i]->estaViva()) entidades[i]->actualizar(dt);
     }
@@ -49,6 +101,17 @@ void Nivel::actualizar(float dt) {
     }
     limitarAlMundo();
     colisiones();
+    if (rocket) {
+        const short recogido = rocket->consumirRecogida();
+        if (recogido == RECO_VIDA) emitirEvento(EV_RECO_VIDA);
+        else if (recogido == RECO_MUNICION) emitirEvento(EV_RECO_MUNICION);
+        else if (recogido == RECO_GRANADA) emitirEvento(EV_RECO_GRANADA);
+        else if (recogido == RECO_FURIA) emitirEvento(EV_RECO_FURIA);
+    }
+    if (rocket && rocket->consumirPaso()) emitirEvento(EV_PASO);
+    if (rocket && rocket->consumirAgacharse()) emitirEvento(EV_AGACHARSE);
+    if (rocket && rocket->consumirAterrizaje()) emitirEvento(EV_ATERRIZAJE);
+    ambiente(dt);
     explosiones();
     notificarGolpe();
 }
@@ -57,7 +120,6 @@ void Nivel::agregarEntidad(Entidad *e) {
     if (!e) return;
     entidades.push_back(e);
 
-    //clase() ya dice qué es: static_cast es seguro y no hace falta dynamic_cast
     const short c = e->clase();
     if (c == CLASE_ROCKET && !rocket) {
         rocket = static_cast<Rocket *>(e);
@@ -71,6 +133,65 @@ void Nivel::agregarEntidad(Entidad *e) {
     } else if (c == CLASE_PROYECTIL && !cenital) {
         Proyectil *p = static_cast<Proyectil *>(e);
         if (!p->esBombeado()) p->fijarSuelo(ySuelo);
+    }
+}
+
+void Nivel::ambiente(float dt) {
+    bool caballo = false;
+    bool botas = false;
+    bool galope = false;
+    bool hayCaballo = false;
+    for (Entidad *e : entidades) {
+        if (!e->estaViva()) continue;
+        const short clase = e->clase();
+        if (clase != CLASE_ENEMIGO && clase != CLASE_CAPITAN) continue;
+        Enemigo *en = static_cast<Enemigo *>(e);
+        if (clase == CLASE_ENEMIGO && en->esMontado())
+            hayCaballo = true;
+        if (!en->suenaElPaso()) continue;
+        if (clase == CLASE_CAPITAN) {
+            botas = true;
+        } else if (en->esMontado()) {
+            caballo = true;
+            if (en->getEsCorreo()) galope = true;
+        } else {
+            botas = true;
+        }
+    }
+    if (hayCaballo) {
+        relojRelincho += dt;
+        if (relojRelincho >= 3.6f) {
+            relojRelincho = 0.f;
+            emitirEvento(EV_RELINCHO);
+        }
+    } else {
+        relojRelincho = 0.f;
+    }
+
+    if (caballo) {
+        silencioCasco = 0.f;
+        relojCasco += dt;
+    } else {
+        silencioCasco += dt;
+        if (silencioCasco < 0.28f)
+            relojCasco += dt;
+    }
+    const float cada = galope ? 0.34f : 0.46f;
+    if (relojCasco >= cada && silencioCasco < 0.28f) {
+        relojCasco = 0.f;
+        emitirEvento(EV_CASCO);
+    }
+    if (silencioCasco >= 0.28f)
+        relojCasco = 0.f;
+
+    if (botas) {
+        relojMarcha += dt;
+        if (relojMarcha >= 0.42f) {
+            relojMarcha = 0.f;
+            emitirEvento(EV_MARCHA);
+        }
+    } else {
+        relojMarcha = 0.f;
     }
 }
 
@@ -97,7 +218,7 @@ void Nivel::resolverApoyo() {
 
     if (rocket->estaEnSuelo()) {
         if (apoyo) {
-            //Sigue parado en la plataforma mientras tenga los pies encima (la plataforma se puede mover)
+
             if (der > apoyo->getX() && izq < apoyo->getX() + apoyo->getAncho()) {
                 rocket->aterrizarEn(apoyo->getY());
             } else {
@@ -108,10 +229,10 @@ void Nivel::resolverApoyo() {
             seguroX = rocket->getX();
             seguroY = rocket->getY();
         } else {
-            rocket->soltarSuelo(); //caminó hasta el borde del barranco
+            rocket->soltarSuelo();
         }
     } else if (rocket->getVelY() >= 0.f) {
-        //Cayendo: se queda en la superficie más alta que haya cruzado en este cuadro
+
         const float pies = rocket->getY() + rocket->getAlto();
         const float piesAntes = rocket->getYAnterior() + rocket->getAlto();
         bool encontro = false;
@@ -138,7 +259,6 @@ void Nivel::resolverApoyo() {
         }
     }
 
-    //Cayó al barranco: pierde una vida y vuelve al último punto firme
     if (rocket->getY() > altoMundo + 40.f) {
         rocket->perderVida();
         rocket->reaparecerEn(seguroX, seguroY);
@@ -151,7 +271,6 @@ void Nivel::bloquearContraEstructuras() {
     for (Entidad *e : entidades) {
         if (e->clase() != CLASE_ESTRUCTURA || !e->esSolida() || !rocket->colisiona(e)) continue;
 
-        //Se deshace solo el eje que choca: así Rocket resbala por el borde en vez de quedarse pegado
         const float nx = rocket->getX();
         const float ny = rocket->getY();
         rocket->setPosicion(rocket->getXAnterior(), ny);
@@ -175,7 +294,6 @@ void Nivel::limitarAlMundo() {
         rocket->setPosicion(nx, ny);
     }
 
-    //Los proyectiles que se salen del mapa se retiran sin explotar
     for (Entidad *e : entidades) {
         if (e->clase() != CLASE_PROYECTIL || !e->estaViva()) continue;
         if (e->getX() < -MARGEN_MUNDO || e->getX() > anchoMundo + MARGEN_MUNDO ||
@@ -194,8 +312,9 @@ void Nivel::colisiones() {
 
         for (std::size_t j = i + 1; j < n; ++j) {
             Entidad *b = entidades[j];
-            if (aFija && b->clase() == CLASE_ESTRUCTURA) continue; //dos estructuras no se hacen nada
-            if (!a->colisiona(b)) continue;                        //también descarta las muertas
+            if (aFija && b->clase() == CLASE_ESTRUCTURA) continue;
+            const bool tiro = a->clase() == CLASE_PROYECTIL || b->clase() == CLASE_PROYECTIL;
+            if (!seTocan(a, b, tiro)) continue;
             a->alChocar(*b);
             b->alChocar(*a);
             if (!a->estaViva()) break;
@@ -220,9 +339,8 @@ void Nivel::explosionEn(float cx, float cy, float radio, float danio, bool deRoc
     for (Entidad *e : entidades) {
         const short c = e->clase();
         if (!e->estaViva() || c == CLASE_PROYECTIL) continue;
-        if (deRocket == (c == CLASE_ROCKET)) continue; //cada bando solo daña al otro
+        if (deRocket == (c == CLASE_ROCKET)) continue;
 
-        //Distancia del punto al rectángulo de la entidad (0 si el punto está adentro)
         float dx = 0.f;
         if (cx < e->getX()) dx = e->getX() - cx;
         else if (cx > e->getX() + e->getAncho()) dx = cx - (e->getX() + e->getAncho());
@@ -244,7 +362,7 @@ void Nivel::notificarGolpe() {
 }
 
 void Nivel::eliminarMuertas() {
-    //Compacta en el mismo vector, sin crear otro. Rocket nunca se borra aquí.
+
     std::size_t k = 0;
     for (std::size_t i = 0; i < entidades.size(); ++i) {
         Entidad *e = entidades[i];

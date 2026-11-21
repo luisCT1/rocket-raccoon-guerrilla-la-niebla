@@ -2,6 +2,7 @@
 #include "Capitan.h"
 #include "Estructura.h"
 #include "Proyectil.h"
+#include "Recogible.h"
 #include "Rocket.h"
 #include "MovOscilatorio.h"
 #include "AgenteTipos.h"
@@ -65,6 +66,12 @@ NivelPenon::NivelPenon(short nivelDificultad, Capitan::Memoria *memoria)
     agregarEntidad(capitan);
     capitan->fijarLimites(LIMITE_IZQ, LIMITE_DER);
     capitan->fijarDificultad(dificultad);
+
+    const float recoX[] = { 520.f, 980.f, 1500.f, 1780.f, CIMA_X + 50.f, 2920.f, 3360.f };
+    const float recoY[] = { SUELO - 186.f, SUELO - 186.f, SUELO - 186.f, SUELO - 186.f, CIMA_Y - 186.f, SUELO - 186.f, SUELO - 186.f };
+    const short recoT[] = { RECO_MUNICION, RECO_GRANADA, RECO_FURIA, RECO_VIDA, RECO_MUNICION, RECO_GRANADA, RECO_FURIA };
+    for (short i = 0; i < 7; ++i)
+        agregarEntidad(new Recogible(recoT[i], recoX[i], recoY[i]));
 }
 
 NivelPenon::~NivelPenon() {}
@@ -72,6 +79,9 @@ NivelPenon::~NivelPenon() {}
 void NivelPenon::actualizar(float dt) {
     if (terminado) return;
     Nivel::actualizar(dt);
+    if (capitan && capitan->estaPersiguiendo())
+        capitan->fijarLimites(40.f, anchoMundo - capitan->getAncho() - 20.f);
+    seguirCapitan();
     moverCamara(dt);
 
     if (!canonAvisado && canon->estaDestruida()) {
@@ -83,6 +93,8 @@ void NivelPenon::actualizar(float dt) {
     const short accion = capitan->consumirInicioAccion();
     if (accion == ACC_GIRATORIO) emitirEvento(EV_ATAQUE_GIRATORIO);
     else if (accion == ACC_TROMBA) emitirEvento(EV_TROMBA);
+    if (capitan->consumirSable()) emitirEvento(EV_SABLE);
+    if (capitan->consumirVoz()) emitirEvento(EV_VOZ);
 
     float objX, objY;
     if (capitan->consumirOrdenCanon(objX, objY)) {
@@ -107,6 +119,68 @@ void NivelPenon::actualizar(float dt) {
         const float dy = rocket->getCentroY() - BANDERA_Y;
         if (dx * dx + dy * dy <= BANDERA_RADIO * BANDERA_RADIO) ponerBandera();
     }
+}
+
+void NivelPenon::seguirCapitan() {
+    if (!capitan) return;
+
+    struct Tramo { float x0, x1, y; };
+    Tramo tramos[8];
+    int n = 0;
+    tramos[n++] = { 0.f, huecoIni, ySuelo };
+    tramos[n++] = { huecoFin, anchoMundo, ySuelo };
+    for (Entidad *p : plataformas) {
+        if (!p || n >= 8) continue;
+        tramos[n++] = { p->getX(), p->getX() + p->getAncho(), p->getY() };
+    }
+
+    const float cx = capitan->getCentroX();
+    const float pies = capitan->getY() + capitan->getAlto();
+    int bajo = -1;
+    float mejor = 1.0e9f;
+    for (int i = 0; i < n; ++i) {
+        if (cx < tramos[i].x0 || cx > tramos[i].x1) continue;
+        float dy = pies - tramos[i].y;
+        if (dy < 0.f) dy = -dy;
+        if (dy < mejor) {
+            mejor = dy;
+            bajo = i;
+        }
+    }
+    if (bajo >= 0) {
+        capitan->setPosicion(capitan->getX(), tramos[bajo].y - capitan->getAlto());
+        return;
+    }
+
+    int cerca = -1;
+    float dist = 1.0e9f;
+    float borde = cx;
+    const float firma = rocket ? rocket->getCentroX() - cx : 0.f;
+    for (int i = 0; i < n; ++i) {
+        float d;
+        float b;
+        if (cx < tramos[i].x0) {
+            d = tramos[i].x0 - cx;
+            b = tramos[i].x0;
+        } else if (cx > tramos[i].x1) {
+            d = cx - tramos[i].x1;
+            b = tramos[i].x1;
+        } else {
+            d = 0.f;
+            b = cx;
+        }
+        if ((b - cx) * firma < 0.f && d > 8.f) d += 40.f;
+        if (d < dist) {
+            dist = d;
+            cerca = i;
+            borde = b;
+        }
+    }
+    if (cerca < 0) return;
+    if (dist <= 110.f)
+        capitan->setPosicion(capitan->getX(), tramos[cerca].y - capitan->getAlto());
+    else
+        capitan->setPosicion(borde - capitan->getAncho() * 0.5f, tramos[cerca].y - capitan->getAlto());
 }
 
 void NivelPenon::moverCamara(float dt) {
