@@ -18,6 +18,7 @@ private:
     bool canonAvisado;
 
     void seguirDisparos();
+    void moverCamara(float dt);
 
 protected:
     void alBorrar(Entidad *e) override;
@@ -40,6 +41,8 @@ public:
     float getBanderaX() const;
     float getBanderaY() const;
     float getBanderaRadio() const;
+    float getHuecoInicio() const { return huecoIni; }
+    float getHuecoFin() const { return huecoFin; }
 };
 
 #endif

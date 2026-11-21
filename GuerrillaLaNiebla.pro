@@ -8,7 +8,13 @@ DESTDIR = $$PWD/bin
 
 INCLUDEPATH += $$PWD/src $$PWD/src/logica $$PWD/src/gui
 
-RESOURCES += recursos.qrc
+RCC_EXE = $$[QT_INSTALL_BINS]/rcc.exe
+RECURSO_BIN = $$PWD/bin/recursos.rcc
+recursos_bin.target = $$RECURSO_BIN
+recursos_bin.depends = $$PWD/recursos.qrc
+recursos_bin.commands = $$shell_quote($$RCC_EXE) -binary $$shell_quote($$PWD/recursos.qrc) -o $$shell_quote($$RECURSO_BIN)
+QMAKE_EXTRA_TARGETS += recursos_bin
+PRE_TARGETDEPS += $$RECURSO_BIN
 
 HEADERS += \
     src/logica/ModeloFisico.h \
@@ -31,7 +37,11 @@ HEADERS += \
     src/gui/Animacion.h \
     src/gui/HojaSprites.h \
     src/gui/MenuInicio.h \
+    src/gui/EscenaMision.h \
+    src/gui/Marcador.h \
     src/gui/EscenaEmboscada.h \
+    src/gui/EscenaAsalto.h \
+    src/gui/EscenaPenon.h \
     src/gui/VentanaJuego.h
 
 SOURCES += \
@@ -54,5 +64,8 @@ SOURCES += \
     src/gui/Animacion.cpp \
     src/gui/HojaSprites.cpp \
     src/gui/MenuInicio.cpp \
+    src/gui/Marcador.cpp \
     src/gui/EscenaEmboscada.cpp \
+    src/gui/EscenaAsalto.cpp \
+    src/gui/EscenaPenon.cpp \
     src/gui/VentanaJuego.cpp

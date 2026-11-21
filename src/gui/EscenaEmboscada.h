@@ -1,7 +1,9 @@
 #ifndef ESCENA_EMBOSCADA_H
 #define ESCENA_EMBOSCADA_H
 
-#include <QGraphicsScene>
+#include "EscenaMision.h"
+#include "Marcador.h"
+
 #include <QHash>
 #include <QImage>
 #include <QPixmap>
@@ -15,22 +17,22 @@ class Entidad;
 class Juego;
 class NivelEmboscada;
 
-class EscenaEmboscada : public QGraphicsScene {
+class EscenaEmboscada : public EscenaMision {
 public:
     EscenaEmboscada();
     ~EscenaEmboscada() override;
 
-    void pulsar(int tecla);
-    void soltar(int tecla);
-    void apuntar(float x, float y);
-    void avanzar(float dt);
+    void pulsar(int tecla) override;
+    void soltar(int tecla) override;
+    void apuntar(float x, float y) override;
+    void avanzar(float dt) override;
 
-    QRectF rectCamara() const;
-    QString textoHud() const;
-    QString mensajeFinal() const;
+    QRectF rectCamara() const override;
+    QString textoHud() const override;
+    QString mensajeFinal() const override;
     int porcentajeVida() const;
-    bool acabo() const;
-    bool gano() const;
+    bool acabo() const override;
+    bool gano() const override;
 
 private:
     struct CapaFondo {
@@ -49,6 +51,7 @@ private:
         float centro = 0.f;
         float suelo = 0.f;
         float alto = 96.f;
+        float fuente = 0.f;
     };
 
     void cargarSprites();
@@ -58,7 +61,7 @@ private:
     void moverCapas();
     void sincronizar();
     void colocar(Entidad *entidad, QGraphicsItem *dibujo);
-    void apoyar(QGraphicsPixmapItem *sprite, const QPixmap &cuadro, float centro, float suelo, float alto);
+    void apoyar(QGraphicsPixmapItem *sprite, const QPixmap &cuadro, float centro, float suelo, float alto, float altoFuente = 0.f, float fraccion = 0.55f);
     QPixmap cuadroDe(Entidad *entidad) const;
     bool miraALaIzquierda(Entidad *entidad) const;
 
@@ -79,10 +82,13 @@ private:
     QVector<QPixmap> lanzar;
     QVector<QPixmap> soldadoCamina;
     QVector<QPixmap> soldadoDispara;
+    QVector<QPixmap> soldadoBandera;
     QVector<QPixmap> rocketDanio;
     QVector<QPixmap> rocketMuerte;
     QVector<QPixmap> soldadoMuere;
     QVector<QPixmap> jineteGalope;
+    QVector<QPixmap> jineteBandera;
+    QVector<QPixmap> jineteTrompeta;
     QVector<QPixmap> jineteMuere;
     QVector<QPixmap> carretaRueda;
     QVector<QPixmap> carretaHerida;
@@ -91,18 +97,7 @@ private:
     QVector<QPixmap> barrilEstalla;
     QPixmap puenteQuieto;
 
-    QImage panelVidas;
-    QVector<QImage> corazones;
-    QVector<QPoint> posCorazon;
-    QImage barraLlena;
-    QImage barraVacia;
-    QRect rojoBarra;
-    QRect textoBarra;
-    QImage balasLlenas;
-    QImage balasVacias;
-    QVector<QImage> iconosBala;
-    QVector<QPoint> posBala;
-    QRect textoBalas;
+    PiezasHud piezasHud;
     QGraphicsPixmapItem *marcador = nullptr;
     QVector<Caida> caidas;
 

@@ -1,5 +1,9 @@
 #include "VentanaJuego.h"
+#include "EscenaAsalto.h"
 #include "EscenaEmboscada.h"
+#include "EscenaMision.h"
+#include "EscenaPenon.h"
+#include "Eventos.h"
 #include "MenuInicio.h"
 
 #include <QCursor>
@@ -12,12 +16,24 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+namespace {
+const char *kBoton =
+    "QPushButton { color:#f6f1e4; background:#3e5c45; border:2px solid #c7a15a; "
+    "border-radius:6px; padding:8px 18px; font-family: Georgia; font-size:16px; }"
+    "QPushButton:hover { background:#52785c; }";
+
+const char *kCartel =
+    "color:#f6f1e4; background:rgba(22,32,24,230); border:2px solid #c7a15a; "
+    "border-radius:8px; padding:18px 22px; font-size:26px; font-weight:bold; font-family: Georgia;";
+}
+
 VentanaJuego::VentanaJuego(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle(QStringLiteral("Guerrilla de La Niebla"));
     resize(1280, 760);
 
     menu = new MenuInicio(this);
-    connect(menu, &MenuInicio::jugar, this, &VentanaJuego::empezarNivel);
+    connect(menu, &MenuInicio::campana, this, &VentanaJuego::empezarCampana);
+    connect(menu, &MenuInicio::nivelElegido, this, &VentanaJuego::empezarUno);
     connect(menu, &MenuInicio::salir, this, &QWidget::close);
 
     vista = new QGraphicsView();
@@ -30,48 +46,40 @@ VentanaJuego::VentanaJuego(QWidget *parent) : QMainWindow(parent) {
     vista->setInteractive(false);
     vista->setMouseTracking(true);
 
-    hud = new QLabel();
-    hud->setStyleSheet(QStringLiteral("color:#f6f1e4; background:#1b2420; padding:8px; font-size:15px;"));
-
     ayuda = new QLabel(QStringLiteral(
-        "Misión: destruye las 3 carretas y no dejes escapar al correo.    "
-        "A D caminan    W salta el barranco    Espacio dispara    G granada    Shift impulso    F furia    Esc menú"));
-    ayuda->setStyleSheet(QStringLiteral("color:#d7e0d6; background:#1b2420; padding:4px 8px 8px 8px;"));
+        "A D caminan    W salta    Espacio dispara    G granada    Shift impulso    F furia    Esc menú"));
+    ayuda->setStyleSheet(QStringLiteral("color:#d7e0d6; background:#1b2420; padding:6px 8px; font-family: Georgia;"));
 
     mision = new QLabel(vista);
     mision->setWordWrap(true);
     mision->setAlignment(Qt::AlignCenter);
-    mision->setText(QStringLiteral(
-        "1816 — Emboscada en el camino\n"
-        "El convoy real lleva el aviso. Destruye las tres carretas: un disparo al barril las vuela.\n"
-        "Si el correo llega al final del camino, la misión falla. Tienes tres oportunidades."));
-    mision->setStyleSheet(QStringLiteral(
-        "color:#f6f1e4; background:rgba(22,32,24,210); border:2px solid #c7a15a; "
-        "border-radius:8px; padding:14px; font-size:18px;"));
+    mision->setStyleSheet(QString::fromLatin1(kCartel).replace(QStringLiteral("font-size:26px"), QStringLiteral("font-size:18px")));
     mision->setFixedWidth(720);
     mision->hide();
 
-    aviso = new QLabel();
+    aviso = new QLabel(vista);
+    aviso->setWordWrap(true);
     aviso->setAlignment(Qt::AlignCenter);
-    aviso->setStyleSheet(QStringLiteral("color:#f3e6c4; background:#243028; padding:16px; font-size:26px; font-weight:bold;"));
+    aviso->setStyleSheet(QString::fromLatin1(kCartel));
+    aviso->setFixedWidth(640);
     aviso->hide();
 
-    volver = new QPushButton(QStringLiteral("Volver al menú"));
+    volver = new QPushButton(QStringLiteral("Volver al menú"), vista);
+    siguiente = new QPushButton(QStringLiteral("Siguiente nivel"), vista);
     volver->setFocusPolicy(Qt::NoFocus);
-    volver->setStyleSheet(QStringLiteral(
-        "QPushButton { color:#f6f1e4; background:#3e5c45; border:2px solid #c7a15a; "
-        "border-radius:6px; padding:8px 16px; } QPushButton:hover { background:#52785c; }"));
+    siguiente->setFocusPolicy(Qt::NoFocus);
+    volver->setStyleSheet(QString::fromLatin1(kBoton));
+    siguiente->setStyleSheet(QString::fromLatin1(kBoton));
     volver->hide();
+    siguiente->hide();
     connect(volver, &QPushButton::clicked, this, &VentanaJuego::volverAlMenu);
+    connect(siguiente, &QPushButton::clicked, this, &VentanaJuego::siguienteNivel);
 
     auto *nivel = new QWidget();
     auto *caja = new QVBoxLayout(nivel);
     caja->setContentsMargins(0, 0, 0, 0);
     caja->setSpacing(0);
-    caja->addWidget(hud);
     caja->addWidget(vista, 1);
-    caja->addWidget(aviso);
-    caja->addWidget(volver, 0, Qt::AlignHCenter);
     caja->addWidget(ayuda);
 
     paginas = new QStackedWidget(this);
@@ -90,48 +98,92 @@ VentanaJuego::~VentanaJuego() {
     escena = nullptr;
 }
 
-void VentanaJuego::empezarNivel() {
+void VentanaJuego::empezarCampana() {
+    campana = true;
+    abrirNivel(NIVEL_EMBOSCADA);
+}
+
+void VentanaJuego::empezarUno(int numero) {
+    campana = false;
+    abrirNivel(numero);
+}
+
+void VentanaJuego::siguienteNivel() {
+    if (nivelCurso < NIVEL_PENON)
+        abrirNivel(nivelCurso + 1);
+}
+
+void VentanaJuego::abrirNivel(int numero) {
     soltarTeclas();
     vista->setScene(nullptr);
     delete escena;
-    escena = new EscenaEmboscada();
+    nivelCurso = numero;
+    if (numero == NIVEL_PENON) {
+        escena = new EscenaPenon();
+        ayuda->setText(QStringLiteral(
+            "A D caminan    W salta    Espacio dispara    G granada    Shift impulso    F furia    Esc menú"));
+        mision->setText(QStringLiteral(
+            "1816 — Duelo en el Peñón\n"
+            "El aviso no llegó. El capitán te espera en la roca, con el cañón cargado.\n"
+            "Cruza las losas que suben y bajan. Cuando caiga, planta la bandera en la cima."));
+    } else if (numero == NIVEL_ASALTO) {
+        escena = new EscenaAsalto();
+        ayuda->setText(QStringLiteral(
+            "W A S D se mueven    Espacio dispara    G granada    Shift impulso    F furia    Esc menú"));
+        mision->setText(QStringLiteral(
+            "1816 — Asalto al patio\n"
+            "Vuela el polvorín, tumba la bandera e inutiliza el cañón.\n"
+            "Cuando las tres tareas estén hechas, vuelve a la salida. Tienes 150 segundos."));
+    } else {
+        escena = new EscenaEmboscada();
+        ayuda->setText(QStringLiteral(
+            "A D caminan    W salta el barranco    Espacio dispara    G granada    Shift impulso    F furia    Esc menú"));
+        mision->setText(QStringLiteral(
+            "1816 — Emboscada en el camino\n"
+            "El convoy real lleva el aviso. Destruye las tres carretas: un disparo al barril las vuela.\n"
+            "Si el correo llega al final del camino, la misión falla. Tienes tres oportunidades."));
+    }
     vista->setBackgroundBrush(escena->backgroundBrush());
     vista->setScene(escena);
     enNivel = true;
+    resultadoVisible = false;
     tiempoMision = 0.f;
     mision->adjustSize();
-    mision->move((vista->width() - mision->width()) / 2, 18);
     mision->show();
     mision->raise();
     aviso->hide();
     volver->hide();
+    siguiente->hide();
     paginas->setCurrentIndex(1);
     reloj->start(16);
     setFocus();
     encuadrar();
+    colocarAvisos();
 }
 
 void VentanaJuego::volverAlMenu() {
     reloj->stop();
     soltarTeclas();
     enNivel = false;
+    campana = false;
+    resultadoVisible = false;
     vista->setScene(nullptr);
     delete escena;
     escena = nullptr;
     mision->hide();
     aviso->hide();
     volver->hide();
+    siguiente->hide();
     paginas->setCurrentIndex(0);
 }
 
 void VentanaJuego::soltarTeclas() {
     if (!escena)
         return;
-    escena->soltar(Qt::Key_A);
-    escena->soltar(Qt::Key_D);
-    escena->soltar(Qt::Key_Left);
-    escena->soltar(Qt::Key_Right);
-    escena->soltar(Qt::Key_Space);
+    const int teclas[] = {Qt::Key_A, Qt::Key_D, Qt::Key_W, Qt::Key_S, Qt::Key_Left, Qt::Key_Right,
+                          Qt::Key_Up, Qt::Key_Down, Qt::Key_Space};
+    for (int tecla : teclas)
+        escena->soltar(tecla);
 }
 
 void VentanaJuego::encuadrar() {
@@ -140,9 +192,46 @@ void VentanaJuego::encuadrar() {
     vista->fitInView(escena->rectCamara(), Qt::KeepAspectRatioByExpanding);
 }
 
+void VentanaJuego::colocarAvisos() {
+    if (!vista)
+        return;
+    if (mision && mision->isVisible()) {
+        mision->move((vista->width() - mision->width()) / 2, 24);
+        mision->raise();
+    }
+    if (!aviso || !aviso->isVisible())
+        return;
+    aviso->setFixedWidth(qMin(680, qMax(280, vista->width() - 80)));
+    aviso->adjustSize();
+    const int x = (vista->width() - aviso->width()) / 2;
+    const int y = qMax(48, (vista->height() - aviso->height()) / 2 - 28);
+    aviso->move(x, y);
+    aviso->raise();
+    QPushButton *boton = siguiente && siguiente->isVisible() ? siguiente : volver;
+    if (boton && boton->isVisible()) {
+        boton->adjustSize();
+        boton->move(x + (aviso->width() - boton->width()) / 2, aviso->y() + aviso->height() + 12);
+        boton->raise();
+    }
+}
+
+void VentanaJuego::mostrarResultado() {
+    if (!escena || !escena->acabo() || resultadoVisible)
+        return;
+    resultadoVisible = true;
+    mision->hide();
+    aviso->setText(escena->mensajeFinal());
+    aviso->show();
+    const bool sigue = campana && escena->gano() && nivelCurso < NIVEL_PENON;
+    siguiente->setVisible(sigue);
+    volver->setVisible(!sigue);
+    colocarAvisos();
+}
+
 void VentanaJuego::resizeEvent(QResizeEvent *event) {
     QMainWindow::resizeEvent(event);
     encuadrar();
+    colocarAvisos();
 }
 
 void VentanaJuego::keyPressEvent(QKeyEvent *event) {
@@ -150,7 +239,7 @@ void VentanaJuego::keyPressEvent(QKeyEvent *event) {
         return;
     if (!enNivel) {
         if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
-            empezarNivel();
+            empezarCampana();
         return;
     }
     if (!escena)
@@ -159,6 +248,8 @@ void VentanaJuego::keyPressEvent(QKeyEvent *event) {
         volverAlMenu();
         return;
     }
+    if (resultadoVisible)
+        return;
     escena->pulsar(event->key());
 }
 
@@ -179,20 +270,15 @@ void VentanaJuego::tick() {
     }
 
     escena->avanzar(0.016f);
-    hud->setText(escena->textoHud());
     encuadrar();
 
     if (mision->isVisible()) {
         tiempoMision += 0.016f;
-        mision->move((vista->width() - mision->width()) / 2, 18);
-        mision->raise();
         if (tiempoMision > 8.f || escena->acabo())
             mision->hide();
     }
 
-    if (escena->acabo()) {
-        aviso->setText(escena->mensajeFinal());
-        aviso->show();
-        volver->show();
-    }
+    if (escena->acabo())
+        mostrarResultado();
+    colocarAvisos();
 }

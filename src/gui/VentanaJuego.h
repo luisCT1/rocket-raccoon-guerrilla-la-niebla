@@ -8,7 +8,7 @@ class QLabel;
 class QPushButton;
 class QStackedWidget;
 class QTimer;
-class EscenaEmboscada;
+class EscenaMision;
 class MenuInicio;
 
 class VentanaJuego : public QMainWindow {
@@ -25,24 +25,32 @@ protected:
 
 private slots:
     void tick();
-    void empezarNivel();
+    void empezarCampana();
+    void empezarUno(int numero);
     void volverAlMenu();
+    void siguienteNivel();
 
 private:
     void encuadrar();
     void soltarTeclas();
+    void abrirNivel(int numero);
+    void colocarAvisos();
+    void mostrarResultado();
 
     QStackedWidget *paginas = nullptr;
     MenuInicio *menu = nullptr;
     QGraphicsView *vista = nullptr;
-    QLabel *hud = nullptr;
     QLabel *ayuda = nullptr;
     QLabel *mision = nullptr;
     QLabel *aviso = nullptr;
     QPushButton *volver = nullptr;
+    QPushButton *siguiente = nullptr;
     QTimer *reloj = nullptr;
-    EscenaEmboscada *escena = nullptr;
+    EscenaMision *escena = nullptr;
     bool enNivel = false;
+    bool campana = false;
+    bool resultadoVisible = false;
+    int nivelCurso = 0;
     float tiempoMision = 0.f;
 };
 

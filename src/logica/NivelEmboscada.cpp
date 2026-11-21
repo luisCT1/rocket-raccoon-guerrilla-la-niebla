@@ -75,9 +75,12 @@ NivelEmboscada::NivelEmboscada()
         agregarEntidad(barriles[i]);
     }
 
-    for (short i = 0; i < 6; ++i) {
-        Enemigo *s = new Enemigo(SOLDADO_X[i], 0.f);
+    const float puestoX[] = { 2160.f, 2380.f, 2600.f, 2840.f, 3080.f, 3320.f, 3540.f, 3760.f };
+    const short puestoAspecto[] = { 0, 2, 1, 4, 0, 3, 2, 0 };
+    for (short i = 0; i < 8; ++i) {
+        Enemigo *s = new Enemigo(puestoX[i], 0.f);
         apoyarEnSuelo(s);
+        s->fijarAspecto(puestoAspecto[i]);
         s->fijarLimites(LIMITE_IZQ, LIMITE_DER);
         agregarEntidad(s);
     }
@@ -149,6 +152,7 @@ void NivelEmboscada::soltarCorreo() {
     correo = new Enemigo(CARRETA_X[2] + 60.f, 0.f);
     apoyarEnSuelo(correo);
     correo->fijarCorreo(true);
+    correo->fijarAspecto(2);
     correo->fijarLimites(LIMITE_IZQ, LIMITE_DER);
     agregarEntidad(correo);
     emitirEvento(EV_CORREO_HUYE);
@@ -164,6 +168,7 @@ void NivelEmboscada::generarOleada() {
 
     Enemigo *s = new Enemigo(sx, 0.f);
     apoyarEnSuelo(s);
+    s->fijarAspecto(static_cast<short>(int(sx / 90.f) % 5));
     s->fijarLimites(LIMITE_IZQ, LIMITE_DER);
     s->fijarAlcanceVision(VISION_ALERTA);
     agregarEntidad(s);

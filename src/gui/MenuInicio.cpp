@@ -1,5 +1,7 @@
 #include "MenuInicio.h"
 
+#include "Eventos.h"
+
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPainter>
@@ -14,32 +16,39 @@ const char *kBoton =
     "  background: rgba(28, 42, 32, 225);"
     "  border: 2px solid #e2b15a;"
     "  border-radius: 8px;"
-    "  padding: 11px 26px;"
-    "  font-size: 18px;"
-    "  min-width: 180px;"
+    "  padding: 8px 18px;"
+    "  font-size: 16px;"
+    "  font-family: Georgia;"
+    "  min-width: 220px;"
     "}"
     "QPushButton:hover { background: rgba(46, 72, 48, 235); border-color: #f0d090; }"
     "QPushButton:pressed { background: rgba(18, 28, 22, 240); }";
 }
 
 MenuInicio::MenuInicio(QWidget *parent) : QWidget(parent) {
-    botonJugar = new QPushButton(QStringLiteral("Jugar"));
+    botonCampana = new QPushButton(QStringLiteral("Campaña"));
+    botonEmboscada = new QPushButton(QStringLiteral("Nivel 1. Emboscada"));
+    botonAsalto = new QPushButton(QStringLiteral("Nivel 2. Asalto"));
+    botonPenon = new QPushButton(QStringLiteral("Nivel 3. El Peñón"));
     botonSalir = new QPushButton(QStringLiteral("Salir"));
-    botonJugar->setStyleSheet(QString::fromLatin1(kBoton));
-    botonSalir->setStyleSheet(QString::fromLatin1(kBoton));
-    botonJugar->setCursor(Qt::PointingHandCursor);
-    botonSalir->setCursor(Qt::PointingHandCursor);
-    botonJugar->setFocusPolicy(Qt::NoFocus);
-    botonSalir->setFocusPolicy(Qt::NoFocus);
+    const QPushButton *botones[] = {botonCampana, botonEmboscada, botonAsalto, botonPenon, botonSalir};
+    for (const QPushButton *boton : botones) {
+        const_cast<QPushButton *>(boton)->setStyleSheet(QString::fromLatin1(kBoton));
+        const_cast<QPushButton *>(boton)->setCursor(Qt::PointingHandCursor);
+        const_cast<QPushButton *>(boton)->setFocusPolicy(Qt::NoFocus);
+    }
 
     auto *columna = new QVBoxLayout();
-    columna->setSpacing(10);
-    columna->addWidget(botonJugar);
+    columna->setSpacing(8);
+    columna->addWidget(botonCampana);
+    columna->addWidget(botonEmboscada);
+    columna->addWidget(botonAsalto);
+    columna->addWidget(botonPenon);
     columna->addWidget(botonSalir);
-    auto *atajo = new QLabel(QStringLiteral("Enter también empieza"));
+    auto *atajo = new QLabel(QStringLiteral("Enter: campaña completa"));
     atajo->setAlignment(Qt::AlignRight);
     atajo->setStyleSheet(QStringLiteral(
-        "color: #f4efe2; font-size: 13px; background: rgba(22, 32, 24, 170); padding: 2px 8px;"));
+        "color: #f4efe2; font-size: 13px; font-family: Georgia; background: rgba(22, 32, 24, 170); padding: 2px 8px;"));
     columna->addWidget(atajo);
 
     auto *fila = new QHBoxLayout();
@@ -47,11 +56,14 @@ MenuInicio::MenuInicio(QWidget *parent) : QWidget(parent) {
     fila->addLayout(columna);
 
     auto *caja = new QVBoxLayout(this);
-    caja->setContentsMargins(48, 24, 210, 68);
+    caja->setContentsMargins(48, 24, 180, 36);
     caja->addStretch(5);
     caja->addLayout(fila);
 
-    connect(botonJugar, &QPushButton::clicked, this, &MenuInicio::jugar);
+    connect(botonCampana, &QPushButton::clicked, this, &MenuInicio::campana);
+    connect(botonEmboscada, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_EMBOSCADA); });
+    connect(botonAsalto, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_ASALTO); });
+    connect(botonPenon, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_PENON); });
     connect(botonSalir, &QPushButton::clicked, this, &MenuInicio::salir);
 }
 

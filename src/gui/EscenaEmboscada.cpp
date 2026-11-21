@@ -130,22 +130,25 @@ QPixmap ajustar(const QImage &img) {
     return QPixmap::fromImage(img.copy(x0, y0, x1 - x0 + 1, y1 - y0 + 1));
 }
 
-QVector<QPixmap> cuadros(const QPixmap &hoja, std::initializer_list<QRect> zonas) {
+QVector<QPixmap> cuadros(const QPixmap &hoja, std::initializer_list<QRect> zonas, bool quitarRotulo = true) {
     QVector<QPixmap> salida;
     if (hoja.isNull())
         return salida;
     for (const QRect &zona : zonas) {
-        const QPixmap cuadro = ajustar(sinRotulo(hoja.copy(zona).toImage().convertToFormat(QImage::Format_ARGB32)));
+        QImage img = hoja.copy(zona).toImage().convertToFormat(QImage::Format_ARGB32);
+        if (quitarRotulo)
+            img = sinRotulo(img);
+        const QPixmap cuadro = ajustar(img);
         if (!cuadro.isNull() && cuadro.width() >= 36 && cuadro.height() >= 36)
             salida.push_back(cuadro);
     }
     return salida;
 }
 
-int lineaApoyo(const QPixmap &cuadro) {
+int lineaApoyo(const QPixmap &cuadro, float fraccion = 0.55f) {
     const QImage img = cuadro.toImage();
     const int ancho = img.width();
-    const int necesario = qMax(8, int(ancho * 0.55f));
+    const int necesario = qMax(6, int(ancho * fraccion));
     for (int y = img.height() - 1; y >= 0; --y) {
         int n = 0;
         int x0 = ancho;
@@ -271,45 +274,36 @@ EscenaEmboscada::~EscenaEmboscada() {
 
 void EscenaEmboscada::cargarSprites() {
     const QPixmap rocket(QStringLiteral(":/nivel1/sprites_rocket.png"));
-    caminar = cuadros(rocket, {QRect(14, 29, 137, 151), QRect(162, 29, 131, 151), QRect(309, 29, 134, 151),
-                               QRect(454, 29, 148, 151), QRect(611, 29, 145, 151)});
-    impulso = cuadros(rocket, {QRect(812, 29, 122, 151), QRect(955, 29, 132, 151), QRect(1096, 29, 137, 151),
-                               QRect(1239, 29, 155, 151), QRect(1412, 29, 152, 151)});
-    saltar = cuadros(rocket, {QRect(19, 235, 111, 162), QRect(147, 235, 140, 162), QRect(308, 235, 136, 162),
-                              QRect(464, 235, 147, 162), QRect(624, 235, 137, 162)});
-    disparar = cuadros(rocket, {QRect(6, 432, 135, 126), QRect(157, 432, 168, 126), QRect(345, 432, 134, 126),
-                                QRect(493, 432, 194, 126), QRect(699, 432, 187, 126)});
-    espera = cuadros(rocket, {QRect(904, 432, 116, 126), QRect(1035, 432, 102, 126), QRect(1193, 432, 112, 126),
-                              QRect(1330, 432, 123, 126), QRect(1475, 432, 131, 126)});
-    lanzar = cuadros(rocket, {QRect(834, 581, 214, 136), QRect(1077, 581, 149, 136), QRect(1279, 581, 124, 136),
-                              QRect(1450, 581, 119, 136)});
-    furia = cuadros(rocket, {QRect(15, 747, 156, 158), QRect(185, 747, 142, 158), QRect(347, 747, 144, 158),
-                             QRect(515, 747, 155, 158), QRect(697, 747, 135, 158)});
-    rocketDanio = cuadros(rocket, {QRect(856, 747, 177, 158), QRect(1046, 747, 129, 158), QRect(1203, 747, 103, 158),
-                                   QRect(1336, 747, 100, 158), QRect(1455, 747, 154, 158)});
-    rocketMuerte = cuadros(rocket, {QRect(16, 909, 160, 121), QRect(200, 909, 114, 121), QRect(333, 909, 123, 121),
-                                    QRect(472, 909, 131, 121), QRect(614, 909, 145, 121), QRect(779, 909, 116, 121)});
+    caminar = cuadros(rocket, {QRect(18, 36, 153, 139), QRect(188, 36, 145, 139), QRect(353, 36, 147, 139),
+                               QRect(521, 36, 144, 139), QRect(691, 36, 134, 139), QRect(847, 36, 147, 139)}, false);
+    espera = cuadros(rocket, {QRect(18, 36, 153, 139)}, false);
+    saltar = cuadros(rocket, {QRect(17, 1159, 144, 138), QRect(186, 1159, 151, 138), QRect(367, 1159, 121, 138),
+                              QRect(522, 1159, 140, 138), QRect(686, 1159, 143, 138), QRect(862, 1159, 144, 138)}, false);
+    disparar = cuadros(rocket, {QRect(20, 406, 162, 139), QRect(189, 406, 143, 139), QRect(356, 406, 167, 139),
+                                QRect(527, 406, 171, 139), QRect(699, 406, 135, 139), QRect(852, 406, 148, 139)}, false);
+    lanzar = cuadros(rocket, {QRect(368, 595, 167, 141), QRect(542, 595, 121, 141), QRect(699, 595, 131, 141)}, false);
+    impulso = cuadros(rocket, {QRect(14, 783, 157, 150), QRect(182, 783, 161, 150),
+                               QRect(355, 783, 149, 150), QRect(527, 783, 144, 150)}, false);
+    furia = cuadros(rocket, {QRect(15, 1340, 164, 155), QRect(198, 1340, 140, 155), QRect(522, 1340, 140, 155)}, false);
+    rocketDanio = cuadros(rocket, {QRect(522, 960, 148, 151), QRect(684, 960, 147, 151)}, false);
+    rocketMuerte = cuadros(rocket, {QRect(684, 960, 147, 151), QRect(851, 960, 154, 151)}, false);
 
     const QPixmap soldados(QStringLiteral(":/nivel1/sprites_soldados.png"));
-    soldadoCamina = cuadros(soldados, {QRect(25, 46, 133, 170), QRect(160, 46, 130, 170), QRect(298, 46, 134, 170),
-                                       QRect(438, 46, 137, 170), QRect(585, 46, 139, 170), QRect(736, 46, 152, 170),
-                                       QRect(890, 46, 136, 170), QRect(1038, 46, 142, 170)});
-    soldadoDispara = cuadros(soldados, {QRect(700, 450, 120, 165), QRect(880, 450, 115, 165), QRect(1035, 450, 125, 165),
-                                        QRect(1175, 450, 140, 165), QRect(1315, 450, 130, 165)});
-    soldadoMuere = separar(soldados, 820, 1000, 48, 0);
-    QVector<QPixmap> caida;
-    for (const QPixmap &cuadro : soldadoMuere) {
-        if (cuadro.height() > cuadro.width() && cuadro.height() > 90)
-            break;
-        caida.push_back(cuadro);
-    }
-    if (!caida.isEmpty())
-        soldadoMuere = caida;
+    soldadoCamina = cuadros(soldados, {QRect(62, 39, 132, 177), QRect(320, 39, 126, 177), QRect(574, 39, 131, 177),
+                                       QRect(828, 39, 135, 177), QRect(1083, 39, 137, 177), QRect(1334, 39, 148, 177)}, false);
+    soldadoDispara = cuadros(soldados, {QRect(58, 1073, 140, 157), QRect(268, 1073, 232, 157), QRect(594, 1073, 91, 157),
+                                        QRect(858, 1073, 76, 157), QRect(1099, 1073, 106, 157), QRect(1360, 1073, 96, 157)}, false);
+    soldadoMuere = cuadros(soldados, {QRect(59, 1588, 138, 151), QRect(329, 1588, 109, 151), QRect(587, 1588, 105, 151),
+                                      QRect(824, 1588, 144, 151), QRect(1082, 1588, 140, 151), QRect(1327, 1588, 162, 151)}, false);
+    soldadoBandera = cuadros(soldados, {QRect(1091, 1817, 121, 205)}, false);
 
     const QPixmap jinete(QStringLiteral(":/nivel1/sprites_jinete.png"));
-    const QVector<QPixmap> caballos = separar(jinete, 20, 171, 90, 0);
-    jineteGalope = caballos.size() > 5 ? caballos.mid(caballos.size() / 2) : caballos;
-    jineteMuere = separar(jinete, 700, 812, 36, 740);
+    jineteGalope = cuadros(jinete, {QRect(103, 726, 192, 199), QRect(506, 726, 186, 199), QRect(908, 726, 184, 199),
+                                    QRect(1308, 726, 184, 199), QRect(1706, 726, 188, 199), QRect(2108, 726, 184, 199)}, false);
+    jineteBandera = cuadros(jinete, {QRect(126, 3356, 148, 216), QRect(523, 3356, 154, 216)}, false);
+    jineteTrompeta = cuadros(jinete, {QRect(917, 3356, 166, 216), QRect(1327, 3356, 146, 216),
+                                      QRect(1732, 3356, 136, 216), QRect(2126, 3356, 148, 216)}, false);
+    jineteMuere = cuadros(jinete, {QRect(105, 3020, 190, 230), QRect(508, 3020, 184, 230), QRect(922, 3020, 154, 230)}, false);
 
     const QPixmap convoy(QStringLiteral(":/nivel1/sprites_convoy.png"));
     carretaRueda = cuadros(convoy, {QRect(20, 8, 265, 132), QRect(297, 8, 246, 132), QRect(553, 8, 222, 132),
@@ -329,227 +323,31 @@ void EscenaEmboscada::cargarSprites() {
     prepararHud(QPixmap(QStringLiteral(":/nivel1/sprint_vidas_municion.png")));
 }
 
-void EscenaEmboscada::apoyar(QGraphicsPixmapItem *sprite, const QPixmap &cuadro, float centro, float suelo, float alto) {
+void EscenaEmboscada::apoyar(QGraphicsPixmapItem *sprite, const QPixmap &cuadro, float centro, float suelo, float alto, float altoFuente, float fraccion) {
     if (!sprite || cuadro.isNull())
         return;
-    const QPixmap puesto = cuadro.scaledToHeight(qMax(1, qRound(alto)), Qt::SmoothTransformation);
+    const float ref = altoFuente > 1.f ? altoFuente : float(qMax(1, cuadro.height()));
+    const float factor = alto / ref;
+    const QPixmap puesto = cuadro.scaledToHeight(qMax(1, qRound(cuadro.height() * factor)), Qt::SmoothTransformation);
     sprite->setPixmap(puesto);
-    const float factor = float(puesto.height()) / float(qMax(1, cuadro.height()));
-    sprite->setPos(centro - puesto.width() / 2.f, suelo - float(lineaApoyo(cuadro) + 1) * factor);
+    sprite->setPos(centro - puesto.width() / 2.f, suelo - float(lineaApoyo(cuadro, fraccion) + 1) * factor);
 }
 
 void EscenaEmboscada::prepararHud(const QPixmap &hoja) {
-    if (hoja.isNull())
-        return;
-    const QImage src = hoja.toImage().convertToFormat(QImage::Format_ARGB32);
-    const QColor tinta = src.rect().contains(QPoint(560, 160)) ? src.pixelColor(560, 160) : QColor(18, 32, 58);
-
-    panelVidas = src.copy(32, 5, 980, 369);
-    const QRect absolutos[3] = {QRect(485, 182, 129, 109), QRect(638, 182, 128, 109), QRect(790, 182, 129, 109)};
-    for (const QRect &abs : absolutos) {
-        const QRect local = abs.translated(-32, -5);
-        if (!panelVidas.rect().contains(local))
-            continue;
-        corazones.append(panelVidas.copy(local));
-        posCorazon.append(local.topLeft());
-        for (int y = local.top(); y <= local.bottom(); ++y) {
-            for (int x = local.left(); x <= local.right(); ++x)
-                panelVidas.setPixelColor(x, y, tinta);
-        }
-    }
-
-    barraLlena = ajustar(src.copy(1082, 5, 1065, 369)).toImage();
-    barraVacia = barraLlena;
-    rojoBarra = QRect();
-    textoBarra = QRect();
-    if (!barraLlena.isNull()) {
-        int rx0 = barraLlena.width();
-        int ry0 = barraLlena.height();
-        int rx1 = -1;
-        int ry1 = -1;
-        int tx0 = barraLlena.width();
-        int ty0 = barraLlena.height();
-        int tx1 = -1;
-        int ty1 = -1;
-        for (int y = 0; y < barraLlena.height(); ++y) {
-            for (int x = 0; x < barraLlena.width(); ++x) {
-                const QRgb p = barraLlena.pixel(x, y);
-                if (qAlpha(p) > 200 && qRed(p) > 170 && qGreen(p) < 80 && qBlue(p) < 90) {
-                    rx0 = std::min(rx0, x);
-                    ry0 = std::min(ry0, y);
-                    rx1 = std::max(rx1, x);
-                    ry1 = std::max(ry1, y);
-                }
-                if (x > barraLlena.width() / 2 && qAlpha(p) > 200 && qRed(p) > 220 && qGreen(p) > 210 && qBlue(p) > 190) {
-                    tx0 = std::min(tx0, x);
-                    ty0 = std::min(ty0, y);
-                    tx1 = std::max(tx1, x);
-                    ty1 = std::max(ty1, y);
-                }
-            }
-        }
-        if (rx1 > rx0)
-            rojoBarra = QRect(rx0, ry0, rx1 - rx0 + 1, ry1 - ry0 + 1);
-        if (tx1 > tx0)
-            textoBarra = QRect(tx0, ty0, tx1 - tx0 + 1, ty1 - ty0 + 1);
-        const QColor pista = ry0 > 2 ? barraLlena.pixelColor(qBound(0, rx0 + 6, barraLlena.width() - 1), qMax(0, ry0 - 2)) : tinta;
-        const QColor placa = tx1 > 0 ? barraLlena.pixelColor(qMin(barraLlena.width() - 1, tx1 + 3), (ty0 + ty1) / 2) : tinta;
-        for (int y = rojoBarra.top(); y <= rojoBarra.bottom(); ++y) {
-            for (int x = rojoBarra.left(); x <= rojoBarra.right(); ++x)
-                barraVacia.setPixelColor(x, y, pista);
-        }
-        for (int y = textoBarra.top(); y <= textoBarra.bottom(); ++y) {
-            for (int x = textoBarra.left(); x <= textoBarra.right(); ++x)
-                barraVacia.setPixelColor(x, y, placa);
-        }
-    }
-
-    const QImage tira = src.copy(32, 418, 1029, 267);
-    balasLlenas = ajustar(tira).toImage();
-    balasVacias = balasLlenas;
-    if (balasLlenas.isNull())
-        return;
-    const QColor fondo = balasLlenas.pixelColor(balasLlenas.width() / 2, balasLlenas.height() / 2);
-    QVector<int> visto(balasLlenas.width() * balasLlenas.height(), 0);
-    QVector<int> cola;
-    int marca = 0;
-    auto oro = [](QRgb p) {
-        return qAlpha(p) > 200 && qRed(p) > 190 && qGreen(p) > 140 && qBlue(p) < 110;
-    };
-    for (int y = 0; y < balasLlenas.height(); ++y) {
-        for (int x = balasLlenas.width() / 4; x < balasLlenas.width() * 2 / 3; ++x) {
-            const int origen = y * balasLlenas.width() + x;
-            if (visto.at(origen) || !oro(balasLlenas.pixel(x, y)))
-                continue;
-            ++marca;
-            int x0 = x;
-            int y0 = y;
-            int x1 = x;
-            int y1 = y;
-            cola.clear();
-            cola.append(origen);
-            visto[origen] = marca;
-            for (int k = 0; k < cola.size(); ++k) {
-                const int i = cola.at(k);
-                const int px = i % balasLlenas.width();
-                const int py = i / balasLlenas.width();
-                x0 = std::min(x0, px);
-                y0 = std::min(y0, py);
-                x1 = std::max(x1, px);
-                y1 = std::max(y1, py);
-                const int dx[4] = {-1, 1, 0, 0};
-                const int dy[4] = {0, 0, -1, 1};
-                for (int v = 0; v < 4; ++v) {
-                    const int nx = px + dx[v];
-                    const int ny = py + dy[v];
-                    if (nx < 0 || ny < 0 || nx >= balasLlenas.width() || ny >= balasLlenas.height())
-                        continue;
-                    const int ni = ny * balasLlenas.width() + nx;
-                    if (visto.at(ni) || !oro(balasLlenas.pixel(nx, ny)))
-                        continue;
-                    visto[ni] = marca;
-                    cola.append(ni);
-                }
-            }
-            if (y1 - y0 < 18 || (y1 - y0) < (x1 - x0))
-                continue;
-            iconosBala.append(balasLlenas.copy(x0, y0, x1 - x0 + 1, y1 - y0 + 1));
-            posBala.append(QPoint(x0, y0));
-            for (int py = y0; py <= y1; ++py) {
-                for (int px = x0; px <= x1; ++px)
-                    balasVacias.setPixelColor(px, py, fondo);
-            }
-        }
-    }
-    int tx0 = balasLlenas.width();
-    int ty0 = balasLlenas.height();
-    int tx1 = -1;
-    int ty1 = -1;
-    for (int y = 0; y < balasLlenas.height(); ++y) {
-        for (int x = balasLlenas.width() * 3 / 5; x < balasLlenas.width(); ++x) {
-            const QRgb p = balasLlenas.pixel(x, y);
-            if (qAlpha(p) > 200 && qRed(p) > 220 && qGreen(p) > 210 && qBlue(p) > 190) {
-                tx0 = std::min(tx0, x);
-                ty0 = std::min(ty0, y);
-                tx1 = std::max(tx1, x);
-                ty1 = std::max(ty1, y);
-            }
-        }
-    }
-    if (tx1 > tx0) {
-        textoBalas = QRect(tx0, ty0, tx1 - tx0 + 1, ty1 - ty0 + 1);
-        const QColor placa = balasLlenas.pixelColor(qMax(0, tx0 - 4), (ty0 + ty1) / 2);
-        for (int y = textoBalas.top(); y <= textoBalas.bottom(); ++y) {
-            for (int x = textoBalas.left(); x <= textoBalas.right(); ++x)
-                balasVacias.setPixelColor(x, y, placa);
-        }
-    }
+    if (!hoja.isNull())
+        prepararMarcador(hoja.toImage().convertToFormat(QImage::Format_ARGB32), piezasHud);
+    return;
 }
 
 void EscenaEmboscada::dibujarHud() {
-    if (!nivel || !nivel->jugador() || panelVidas.isNull())
+    if (!nivel || !nivel->jugador() || piezasHud.vidas.isNull())
         return;
     Rocket *rocket = nivel->jugador();
-    const int vidas = qBound(0, int(rocket->getVidas()), corazones.size());
-    const float parte = rocket->getSaludMax() > 0.f ? rocket->getSalud() / rocket->getSaludMax() : 0.f;
-    const int municion = qBound(0, int(rocket->getMunicion()), 30);
-
-    const QImage panel = panelVidas.scaledToHeight(84, Qt::SmoothTransformation);
-    const QImage barra = barraVacia.scaledToHeight(68, Qt::SmoothTransformation);
-    const QImage balas = balasVacias.scaledToHeight(56, Qt::SmoothTransformation);
-    const float ep = panelVidas.height() > 0 ? 84.f / float(panelVidas.height()) : 1.f;
-    const float eb = barraVacia.height() > 0 ? 68.f / float(barraVacia.height()) : 1.f;
-    const float ea = balasVacias.height() > 0 ? 56.f / float(balasVacias.height()) : 1.f;
-
-    QImage panelD = panel;
-    QPainter pintor(&panelD);
-    for (int i = 0; i < vidas && i < corazones.size(); ++i) {
-        const QImage corazon = corazones.at(i).scaled(qRound(corazones.at(i).width() * ep),
-            qRound(corazones.at(i).height() * ep), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        pintor.drawImage(QPoint(qRound(posCorazon.at(i).x() * ep), qRound(posCorazon.at(i).y() * ep)), corazon);
-    }
-    pintor.end();
-
-    QImage barraD = barra;
-    if (!rojoBarra.isNull() && !barraLlena.isNull()) {
-        const int anchoRojo = qRound(rojoBarra.width() * qBound(0.f, parte, 1.f));
-        QPainter pb(&barraD);
-        pb.drawImage(QRect(qRound(rojoBarra.x() * eb), qRound(rojoBarra.y() * eb), qRound(anchoRojo * eb), qRound(rojoBarra.height() * eb)),
-            barraLlena, QRect(rojoBarra.x(), rojoBarra.y(), anchoRojo, rojoBarra.height()));
-        pb.setPen(QColor(246, 241, 228));
-        pb.setFont(QFont(QStringLiteral("Arial"), 11, QFont::Bold));
-        const QRect caja(qRound(textoBarra.x() * eb), qRound(textoBarra.y() * eb), qRound(textoBarra.width() * eb), qRound(textoBarra.height() * eb));
-        pb.drawText(caja, Qt::AlignCenter, QString::number(qRound(parte * 100.f)) + QStringLiteral("%"));
-        pb.end();
-    }
-
-    QImage balasD = balas;
-    QPainter pa(&balasD);
-    int visibles = 0;
-    if (municion > 0 && !iconosBala.isEmpty())
-        visibles = qMin(iconosBala.size(), qMax(1, qRound(iconosBala.size() * municion / 30.0)));
-    for (int i = 0; i < visibles; ++i) {
-        const QImage icono = iconosBala.at(i).scaled(qRound(iconosBala.at(i).width() * ea),
-            qRound(iconosBala.at(i).height() * ea), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        pa.drawImage(QPoint(qRound(posBala.at(i).x() * ea), qRound(posBala.at(i).y() * ea)), icono);
-    }
-    pa.setPen(QColor(246, 241, 228));
-    pa.setFont(QFont(QStringLiteral("Arial"), 12, QFont::Bold));
-    const QRect cifra(qRound(textoBalas.x() * ea), qRound(textoBalas.y() * ea), qRound(textoBalas.width() * ea), qRound(textoBalas.height() * ea));
-    pa.drawText(cifra, Qt::AlignCenter, QString::number(municion) + QStringLiteral("/30"));
-    pa.end();
-
-    const int ancho = qMax(panelD.width(), qMax(balasD.width(), barraD.width()));
-    const int yBalas = panelD.height() + 6;
-    const int yBarra = yBalas + balasD.height() + 6;
-    QImage lienzo(ancho, yBarra + barraD.height(), QImage::Format_ARGB32);
-    lienzo.fill(Qt::transparent);
-    QPainter todo(&lienzo);
-    todo.drawImage(0, 0, panelD);
-    todo.drawImage(0, yBalas, balasD);
-    todo.drawImage(0, yBarra, barraD);
-    todo.end();
-
+    const QImage lienzo = componerMarcador(piezasHud, rocket->getVidas(),
+        rocket->getSaludMax() > 0.f ? rocket->getSalud() / rocket->getSaludMax() : 0.f,
+        rocket->getMunicion(), rocket->getGranadas(), rocket->getBarraFuria());
+    if (lienzo.isNull())
+        return;
     if (!marcador) {
         marcador = addPixmap(QPixmap());
         marcador->setZValue(40);
@@ -752,7 +550,7 @@ void EscenaEmboscada::avanzar(float dt) {
             continue;
         }
         const int frame = qMin(int(caida.edad * 8.f), caida.cuadros.size() - 1);
-        apoyar(caida.item, caida.cuadros.at(frame), caida.centro, caida.suelo, caida.alto);
+        apoyar(caida.item, caida.cuadros.at(frame), caida.centro, caida.suelo, caida.alto, caida.fuente, 0.22f);
     }
 }
 
@@ -762,23 +560,7 @@ QRectF EscenaEmboscada::rectCamara() const {
 }
 
 QString EscenaEmboscada::textoHud() const {
-    if (!nivel || !nivel->jugador())
-        return {};
-
-    Rocket *rocket = nivel->jugador();
-    QString texto = QStringLiteral("Granadas %1   Furia %2%")
-        .arg(rocket->getGranadas())
-        .arg(int(rocket->getBarraFuria() * 100.f));
-    if (rocket->estaFurioso())
-        texto += QStringLiteral("   FURIA");
-    if (nivel->getPartesRestantes() > 0)
-        texto += QStringLiteral("   Misión: destruye las carretas (quedan %1). El barril las vuela.")
-            .arg(nivel->getPartesRestantes());
-    else if (nivel->correoEnFuga())
-        texto += QStringLiteral("   Misión: detén al correo antes de que llegue al final.");
-    else if (!nivel->estaTerminado())
-        texto += QStringLiteral("   Misión: el convoy está cayendo.");
-    return texto;
+    return {};
 }
 
 QString EscenaEmboscada::mensajeFinal() const {
@@ -849,9 +631,18 @@ QPixmap EscenaEmboscada::cuadroDe(Entidad *entidad) const {
             indice = int(tiempo * (estado == 1 ? 8.f : 12.f));
     } else if (entidad->clase() == CLASE_ENEMIGO) {
         auto *enemigo = static_cast<Enemigo *>(entidad);
-        if (enemigo->getEsCorreo())
-            lista = &jineteGalope;
-        else if (enemigo->estadoVisual() == 1)
+        const short aspecto = enemigo->getAspecto();
+        const bool jinete = enemigo->getEsCorreo() || aspecto >= 2;
+        if (jinete) {
+            if (aspecto == 3 && !jineteBandera.isEmpty())
+                lista = &jineteBandera;
+            else if (aspecto == 4 && !jineteTrompeta.isEmpty())
+                lista = &jineteTrompeta;
+            else
+                lista = &jineteGalope;
+        } else if (aspecto == 1 && !soldadoBandera.isEmpty()) {
+            lista = &soldadoBandera;
+        } else if (enemigo->estadoVisual() == 1)
             lista = &soldadoDispara;
         else
             lista = &soldadoCamina;
@@ -889,12 +680,20 @@ void EscenaEmboscada::colocar(Entidad *entidad, QGraphicsItem *dibujo) {
         cuadro = voltear(cuadro);
 
     float altoDibujo = entidad->getAlto();
+    float fuente = 0.f;
+    float fraccionApoyo = 0.55f;
     bool estalla = false;
-    if (entidad->clase() == CLASE_ROCKET)
+    if (entidad->clase() == CLASE_ROCKET) {
         altoDibujo = 118.f;
-    else if (entidad->clase() == CLASE_ENEMIGO)
-        altoDibujo = static_cast<Enemigo *>(entidad)->getEsCorreo() ? 128.f : 108.f;
-    else if (entidad->clase() == CLASE_ESTRUCTURA) {
+        fuente = caminar.isEmpty() ? 0.f : float(caminar.first().height());
+    } else if (entidad->clase() == CLASE_ENEMIGO) {
+        auto *enemigo = static_cast<Enemigo *>(entidad);
+        const bool jinete = enemigo->getEsCorreo() || enemigo->getAspecto() >= 2;
+        altoDibujo = jinete ? 128.f : 108.f;
+        const QVector<QPixmap> &ref = jinete ? jineteGalope : soldadoCamina;
+        fuente = ref.isEmpty() ? 0.f : float(ref.first().height());
+        fraccionApoyo = 0.22f;
+    } else if (entidad->clase() == CLASE_ESTRUCTURA) {
         auto *pieza = static_cast<Estructura *>(entidad);
         if (pieza->getTipo() == EST_CARRETA)
             altoDibujo = pieza->estaDestruida() ? 124.f : 112.f;
@@ -914,7 +713,7 @@ void EscenaEmboscada::colocar(Entidad *entidad, QGraphicsItem *dibujo) {
         sprite->setPixmap(puesto);
         sprite->setPos(entidad->getCentroX() - puesto.width() / 2.f, entidad->getCentroY() - puesto.height() / 2.f);
     } else {
-        apoyar(sprite, cuadro, entidad->getCentroX(), entidad->getY() + entidad->getAlto(), altoDibujo);
+        apoyar(sprite, cuadro, entidad->getCentroX(), entidad->getY() + entidad->getAlto(), altoDibujo, fuente, fraccionApoyo);
     }
     if (auto *rocket = dynamic_cast<Rocket *>(entidad))
         sprite->setOpacity(!rocket->esInvulnerable() || std::fmod(tiempo, 0.24f) < 0.12f ? 1.0 : 0.35);
@@ -946,8 +745,11 @@ void EscenaEmboscada::sincronizar() {
                 auto *sprite = addPixmap(QPixmap());
                 sprite->setZValue(entidad->clase() == CLASE_ESTRUCTURA ? 2 : 3);
                 sprite->setData(0, entidad->clase());
-                if (entidad->clase() == CLASE_ENEMIGO)
-                    sprite->setData(1, static_cast<Enemigo *>(entidad)->getEsCorreo() ? 1 : 0);
+                if (entidad->clase() == CLASE_ENEMIGO) {
+                    auto *enemigo = static_cast<Enemigo *>(entidad);
+                    sprite->setData(1, enemigo->getEsCorreo() || enemigo->getAspecto() >= 2 ? 1 : 0);
+                    sprite->setData(2, enemigo->getAspecto());
+                }
                 dibujo = sprite;
             }
             piezas.insert(entidad, dibujo);
@@ -966,8 +768,9 @@ void EscenaEmboscada::sincronizar() {
         QGraphicsItem *dibujo = piezas.take(entidad);
         if (dibujo->data(0).toInt() == CLASE_ENEMIGO) {
             auto *sprite = dynamic_cast<QGraphicsPixmapItem *>(dibujo);
-            const bool correo = dibujo->data(1).toInt() != 0;
-            const QVector<QPixmap> &anim = correo ? jineteMuere : soldadoMuere;
+            const bool jinete = dibujo->data(1).toInt() != 0;
+            const QVector<QPixmap> &anim = jinete ? jineteMuere : soldadoMuere;
+            const QVector<QPixmap> &ref = jinete ? jineteGalope : soldadoCamina;
             if (sprite && !anim.isEmpty()) {
                 Caida caida;
                 caida.item = addPixmap(QPixmap());
@@ -975,8 +778,9 @@ void EscenaEmboscada::sincronizar() {
                 caida.cuadros = anim;
                 caida.centro = float(sprite->pos().x() + sprite->pixmap().width() / 2.0);
                 caida.suelo = float(sprite->pos().y() + sprite->pixmap().height());
-                caida.alto = correo ? 120.f : 96.f;
-                apoyar(caida.item, anim.first(), caida.centro, caida.suelo, caida.alto);
+                caida.alto = jinete ? 128.f : 108.f;
+                caida.fuente = ref.isEmpty() ? 0.f : float(ref.first().height());
+                apoyar(caida.item, anim.first(), caida.centro, caida.suelo, caida.alto, caida.fuente, 0.22f);
                 caidas.append(caida);
             }
         }
