@@ -6,6 +6,8 @@
 #include <stdexcept>
 
 namespace {
+
+// ---- cuerpo
 constexpr float ANCHO_CAPITAN = 60.f;
 constexpr float ALTO_CAPITAN = 90.f;
 constexpr float VIDA_CAPITAN = 1000.f;
@@ -20,6 +22,7 @@ constexpr float TROMBA_MAX = 260.f;
 constexpr float TROMBA_GROSOR = 45.f;
 constexpr float TROMBA_ALTURA = 80.f;
 
+// ---- 1) percepción
 constexpr float ALCANCE_VISTA = 600.0f;
 constexpr float UMBRAL_ALTO = 60.0f;
 constexpr float INTENSIDAD_DASH = 0.8f;
@@ -28,6 +31,7 @@ constexpr float VISTA_MIN = 0.1f;
 constexpr float VISTA_MAX = 0.6f;
 constexpr float TOLERANCIA = 1e-4f;
 
+// ---- 2) razonamiento
 const float BASE[3][ACC_NUM] = {
       {  3.0f,  -1.0f,    1.0f,   -1.0f,     0.5f },
      {  1.5f,   3.0f,    1.5f,    1.0f,     1.0f },
@@ -38,8 +42,10 @@ constexpr float CERCA = 150.0f;
 constexpr float LEJOS = 300.0f;
 constexpr float EMPATE = 1e-4f;
 
+// ---- 3) acción
 const float DURACION[ACC_NUM] = { 1.2f, 0.6f, 2.0f, 1.5f, 1.0f };
 
+// ---- 4) aprendizaje
 constexpr float ESCALA_PESO = 1.5f;
 constexpr float BONO_HABITO = 1.5f;
 constexpr int CONFIANZA_MIN = 10;
@@ -88,6 +94,8 @@ Capitan::Capitan(float x_, float y_, Memoria *memoria_)
 }
 
 Capitan::~Capitan() {}
+
+// ======================================================================= cuerpo
 
 void Capitan::actualizar(float dt) {
     if (derrotado) return;
@@ -289,10 +297,7 @@ float Capitan::radioTromba() const {
     return trombaActiva() ? TROMBA_MAX * avanceAccion() : 0.f;
 }
 
-
-
-//Percepcion
-
+//  1) PERCEPCIÓN
 
 void Capitan::percibir(const Rocket *r, float dt) {
     if (r == nullptr) {
@@ -360,6 +365,8 @@ void Capitan::fijarRadioOido(float radio) {
 
 float Capitan::getRetrasoPercepcion() const { return retrasoReaccion; }
 
+//  2) RAZONAMIENTO
+
 float Capitan::puntaje(short a) const {
     if (a < 0 || a >= ACC_NUM) return NO_DISPONIBLE;
 
@@ -389,8 +396,6 @@ float Capitan::puntaje(short a) const {
     }
     return s + peso(a);
 }
-
-// Razonamiento
 
 short Capitan::decidir() const {
     short mejor = ACC_NINGUNA;
@@ -447,10 +452,7 @@ void Capitan::fijarVelocidadAtaques(float factor) {
 float Capitan::getAgresividad() const { return agresividad; }
 float Capitan::getVelocidadAtaques() const { return factorVelocidad; }
 
-
-
-//Accion
-
+// 3) ACCIÓN
 
 void Capitan::ejecutarAccion(short a, const Rocket *r) {
     if (a < 0 || a >= ACC_NUM) throw std::out_of_range("Capitan: accion desconocida");
@@ -499,15 +501,13 @@ float Capitan::avanceAccion() const {
     return 1.f - accionRestante / accionDuracion;
 }
 
+// 4) APRENDIZAJE
+
 void Capitan::olvidarTodo() {
     memoria->conteoHabitos.fill(0);
     memoria->pesosAccion.fill(0.f);
     memoria->bonoAccion.fill(0.f);
 }
-
-
-// Aprendizaje
-
 
 void Capitan::registrarHabito(short habito) {
     if (habito < 0 || habito >= HAB_NUM)

@@ -23,6 +23,7 @@ private:
     short siguientePunto;
 
     void revisarTareas();
+    void mantenerEnElCampamento();
     bool rocketEnSalida() const;
 
 public:
