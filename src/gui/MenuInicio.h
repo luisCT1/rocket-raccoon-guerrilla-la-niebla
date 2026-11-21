@@ -15,11 +15,15 @@ protected:
     void paintEvent(QPaintEvent *evento) override;
 
 signals:
-    void jugar();
+    void campana();
+    void nivelElegido(int numero);
     void salir();
 
 private:
-    QPushButton *botonJugar = nullptr;
+    QPushButton *botonCampana = nullptr;
+    QPushButton *botonEmboscada = nullptr;
+    QPushButton *botonAsalto = nullptr;
+    QPushButton *botonPenon = nullptr;
     QPushButton *botonSalir = nullptr;
 };
 

@@ -29,7 +29,8 @@ Enemigo::Enemigo(float x_, float y_)
       maxX(1.0e9f),
       origenX(x_),
       recargaDisparo(CADENCIA * 0.5f),
-      persiguiendo(false) {}
+      persiguiendo(false),
+      aspecto(0) {}
 
 Enemigo::~Enemigo() {}
 
@@ -152,6 +153,9 @@ void Enemigo::fijarCorreo(bool c) {
     if (c) velocidad = V_CORREO;
 }
 
+void Enemigo::fijarAspecto(short a) { aspecto = a; }
+
 bool Enemigo::getEsCorreo() const { return esCorreo; }
+short Enemigo::getAspecto() const { return aspecto; }
 float Enemigo::getVida() const { return vida; }
 char Enemigo::getDireccion() const { return direccion; }

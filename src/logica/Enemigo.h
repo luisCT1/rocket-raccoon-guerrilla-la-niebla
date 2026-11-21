@@ -24,6 +24,7 @@ protected:
     float origenX; //centro de la patrulla
     float recargaDisparo;
     bool persiguiendo;
+    short aspecto;
 
 public:
     Enemigo(float x, float y);
@@ -45,8 +46,10 @@ public:
     void fijarLimites(float minimoX, float maximoX); //lanza std::invalid_argument si vienen invertidos
     void fijarAlcanceVision(float alcance);
     void fijarCorreo(bool c);
+    void fijarAspecto(short a);
 
     bool getEsCorreo() const;
+    short getAspecto() const;
     float getVida() const;
     char getDireccion() const;
 };
