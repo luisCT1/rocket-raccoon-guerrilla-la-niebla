@@ -1,56 +1,71 @@
 QT += core gui widgets multimedia
+
 CONFIG += c++17
-TARGET = JuegoRocket
+CONFIG -= debug_and_release
 TEMPLATE = app
+TARGET = JuegoRocket
+DESTDIR = $$PWD/bin
+
+INCLUDEPATH += $$PWD/src $$PWD/src/logica $$PWD/src/gui
+
+RCC_EXE = $$[QT_INSTALL_BINS]/rcc.exe
+RECURSO_BIN = $$PWD/bin/recursos.rcc
+recursos_bin.target = $$RECURSO_BIN
+recursos_bin.depends = $$PWD/recursos.qrc
+recursos_bin.commands = $$shell_quote($$RCC_EXE) -binary $$shell_quote($$PWD/recursos.qrc) -o $$shell_quote($$RECURSO_BIN)
+QMAKE_EXTRA_TARGETS += recursos_bin
+PRE_TARGETDEPS += $$RECURSO_BIN
 
 HEADERS += \
-AgenteTipos.h \
-ArteAsalto.h \
-AtlasNivel2.h \
-Capitan.h \
-Enemigo.h \
-Entidad.h \
-Estructura.h \
-Eventos.h \
-Juego.h \
-MenuWidget.h \
-ModeloFisico.h \
-MovCircular.h \
-MovOscilatorio.h \
-MovParabolico.h \
-Nivel.h \
-NivelAsalto.h \
-NivelEmboscada.h \
-NivelPenon.h \
-Proyectil.h \
-Rocket.h \
-Sonido.h \
-Sprites.h \
-VentanaPrincipal.h \
-VistaJuego.h
+    src/logica/ModeloFisico.h \
+    src/logica/MovParabolico.h \
+    src/logica/MovOscilatorio.h \
+    src/logica/MovCircular.h \
+    src/logica/Entidad.h \
+    src/logica/Proyectil.h \
+    src/logica/Rocket.h \
+    src/logica/Enemigo.h \
+    src/logica/Estructura.h \
+    src/logica/Nivel.h \
+    src/logica/NivelEmboscada.h \
+    src/logica/NivelAsalto.h \
+    src/logica/NivelPenon.h \
+    src/logica/Eventos.h \
+    src/logica/AgenteTipos.h \
+    src/logica/Capitan.h \
+    src/logica/Juego.h \
+    src/gui/HojaSprites.h \
+    src/gui/MenuInicio.h \
+    src/gui/EscenaMision.h \
+    src/gui/Marcador.h \
+    src/gui/EscenaEmboscada.h \
+    src/gui/EscenaAsalto.h \
+    src/gui/EscenaPenon.h \
+    src/gui/Sonido.h \
+    src/gui/VentanaJuego.h
 
 SOURCES += \
-ArteAsalto.cpp \
-Capitan.cpp \
-Enemigo.cpp \
-Entidad.cpp \
-Estructura.cpp \
-Juego.cpp \
-MenuWidget.cpp \
-ModeloFisico.cpp \
-MovCircular.cpp \
-MovOscilatorio.cpp \
-MovParabolico.cpp \
-Nivel.cpp \
-NivelAsalto.cpp \
-NivelEmboscada.cpp \
-NivelPenon.cpp \
-Proyectil.cpp \
-Rocket.cpp \
-Sonido.cpp \
-Sprites.cpp \
-VentanaPrincipal.cpp \
-VistaJuego.cpp \
-main.cpp
-
-DEFINES += RUTA_RECURSOS=\\\"$$PWD/recursos/\\\"
+    src/main.cpp \
+    src/logica/ModeloFisico.cpp \
+    src/logica/MovParabolico.cpp \
+    src/logica/MovOscilatorio.cpp \
+    src/logica/MovCircular.cpp \
+    src/logica/Entidad.cpp \
+    src/logica/Proyectil.cpp \
+    src/logica/Rocket.cpp \
+    src/logica/Enemigo.cpp \
+    src/logica/Estructura.cpp \
+    src/logica/Nivel.cpp \
+    src/logica/NivelEmboscada.cpp \
+    src/logica/NivelAsalto.cpp \
+    src/logica/NivelPenon.cpp \
+    src/logica/Capitan.cpp \
+    src/logica/Juego.cpp \
+    src/gui/HojaSprites.cpp \
+    src/gui/MenuInicio.cpp \
+    src/gui/Marcador.cpp \
+    src/gui/EscenaEmboscada.cpp \
+    src/gui/EscenaAsalto.cpp \
+    src/gui/EscenaPenon.cpp \
+    src/gui/Sonido.cpp \
+    src/gui/VentanaJuego.cpp

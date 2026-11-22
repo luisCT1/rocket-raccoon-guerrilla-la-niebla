@@ -1,84 +1,84 @@
-# This file is used to ignore files which are generated
-# ----------------------------------------------------------------------------
-
-*~
-*.autosave
-*.a
-*.core
-*.moc
+# Compilados / objetos
+*.d
+*.slo
+*.lo
 *.o
 *.obj
-*.orig
-*.rej
-*.so
-*.so.*
-*_pch.h.cpp
-*_resource.rc
-*.qm
-.#*
-*.*#
-core
-!core/
-tags
-.DS_Store
-.directory
-*.debug
-Makefile*
-*.prl
-*.app
-moc_*.cpp
-ui_*.h
-qrc_*.cpp
-Thumbs.db
-*.res
-*.rc
-/.qmake.cache
-/.qmake.stash
-**/.qmlls.ini
-
-# qtcreator generated files
-*.pro.user*
-*.qbs.user*
-CMakeLists.txt.user*
-
-# xemacs temporary files
-*.flc
-
-# Vim temporary files
-.*.swp
-
-# Visual Studio generated files
-*.ib_pdb_index
-*.idb
+*.gch
+*.pch
 *.ilk
 *.pdb
-*.sln
-*.suo
-*.vcproj
-*vcproj.*.*.user
-*.ncb
-*.sdf
-*.opensdf
-*.vcxproj
-*vcxproj.*
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.out
+*.app
+*.dwo
 
-# MinGW generated files
+# Carpetas de build de Qt Creator / qmake
+build/
+bin/
+Build/
+build-*/
+debug/
+release/
+Debug/
+Release/
+*_autogen/
+
+# Archivos generados por qmake / moc / uic / rcc
+Makefile
+Makefile.*
+*.pro.user
+*.pro.user.*
+*.qmake.stash
+moc_*.cpp
+moc_*.h
+ui_*.h
+qrc_*.cpp
+object_script.*
 *.Debug
 *.Release
 
-# Python byte code
-*.pyc
+# CMake (por si lo usan después)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CMakeLists.txt.user
+cmake-build-*/
 
-# Binaries
-# --------
-*.dll
-*.exe
+# Qt Creator / IDE
+.qtcreator/
+.qtc_clangd/
+*.autosave
+*.qmlproject.user
+*.qmlproject.user.*
+.vscode/
+.idea/
+*.user
+*.user.*
 
-# Directories with generated files
-.moc/
-.obj/
-.pch/
-.rcc/
-.uic/
-/build*/
-/.qtcreator/
+# Google Drive / Windows
+desktop.ini
+**/desktop.ini
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporales / logs / backups
+*.tmp
+*.log
+*.bak
+*.swp
+*~
+.cache/
+Testing/
+
+# vcpkg
+vcpkg_installed/
