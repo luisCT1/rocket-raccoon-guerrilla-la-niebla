@@ -17,6 +17,8 @@ private:
     float crujido;
     float intervaloOleada;
     float tiempoOleada;
+    bool vozInicio;
+    bool agrupados;
 
     Estructura *puente;
     Estructura *carretas[3];

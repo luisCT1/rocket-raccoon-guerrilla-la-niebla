@@ -281,7 +281,7 @@ QVector<TrozoSelva> recortarSelva(const QPixmap &hoja) {
 EscenaEmboscada::EscenaEmboscada() {
     setSceneRect(0, 0, 4000, 720);
     setBackgroundBrush(QColor(168, 186, 190));
-    sonidos = new Sonido(this);
+    sonidos = new Sonido(this, NIVEL_EMBOSCADA);
     cargarSprites();
 
     juego = new Juego();
@@ -674,13 +674,15 @@ QPixmap EscenaEmboscada::cuadroDe(Entidad *entidad) const {
             lista = &agachar;
         else if (granadaMuestra > 0.f)
             lista = &lanzar;
-        else if (teclas.contains(Qt::Key_Space))
+        else if (rocket->muestraArma())
             lista = &disparar;
         else if (estado == 0)
             lista = espera.isEmpty() ? &caminar : &espera;
         else
             lista = &caminar;
-        if (rocket->getVidas() <= 0)
+        if (lista == &disparar)
+            indice = rocket->cuadroArma();
+        else if (rocket->getVidas() <= 0)
             indice = lista->isEmpty() ? 0 : lista->size() - 1;
         else if (estado == 0 && lista != &rocketDanio)
             indice = 0;
@@ -706,7 +708,7 @@ QPixmap EscenaEmboscada::cuadroDe(Entidad *entidad) const {
             lista = &soldadoDispara;
         else
             lista = &soldadoCamina;
-        indice = int(tiempo * 7.f);
+        indice = combate ? enemigo->cuadroCombate(lista ? lista->size() : 0) : int(tiempo * 7.f);
     } else if (entidad->clase() == CLASE_ESTRUCTURA) {
         auto *pieza = static_cast<Estructura *>(entidad);
         if (pieza->getTipo() == EST_PUENTE)

@@ -12,13 +12,11 @@ void pintarCifra(QPainter &pintor, const QRect &caja, const QString &texto, int 
     QFont letra(QStringLiteral("Georgia"), tam, QFont::Bold);
     letra.setStyleStrategy(QFont::PreferAntialias);
     letra.setLetterSpacing(QFont::AbsoluteSpacing, 1.0);
-    if (tamForzado <= 0) {
-        QFontMetrics medida(letra);
-        while (tam > 8 && medida.horizontalAdvance(texto) > caja.width() - 8) {
-            --tam;
-            letra.setPointSize(tam);
-            medida = QFontMetrics(letra);
-        }
+    QFontMetrics medida(letra);
+    while (tam > 8 && medida.horizontalAdvance(texto) > caja.width() - 8) {
+        --tam;
+        letra.setPointSize(tam);
+        medida = QFontMetrics(letra);
     }
     pintor.setFont(letra);
     for (int dy = -2; dy <= 2; ++dy) {
@@ -111,9 +109,42 @@ void prepararMarcador(const QImage &hoja, PiezasHud &p) {
     p.cifraVida = QRect(1012, 128, 280, 168);
     p.zonaBalas = QRect(425, 87, 450, 200);
     p.cifraBalas = QRect(915, 77, 360, 198);
-    p.cifraGranadas = QRect(348, 108, 220, 140);
+    p.cifraGranadas = QRect(300, 88, 290, 168);
     p.rellenoFuria = QRect(393, 190, 1080, 112);
-    p.cifraFuria = QRect(1308, 168, 176, 128);
+    p.cifraFuria = QRect(1240, 186, 280, 140);
+
+    p.furiaDesde = QVector<int>(p.furia.height(), -1);
+    p.furiaHasta = QVector<int>(p.furia.height(), -1);
+    p.furiaOrigen = p.furia.width();
+    p.furiaFin = 0;
+    auto esRelleno = [](const QColor &c) {
+        if (c.alpha() < 200 || c.blue() > 50)
+            return false;
+        if (c.red() > 200 && c.green() > 140 && c.blue() < 55)
+            return true;
+        return c.red() > 90 && c.green() < 110 && c.blue() < 40 && c.red() > c.green() + 40;
+    };
+    const int yTope = qMin(330, p.furia.height());
+    const int xTope = qMin(1260, p.furia.width());
+    for (int y = 160; y < yTope; ++y) {
+        int primero = -1;
+        int ultimo = -1;
+        int cuenta = 0;
+        for (int x = 420; x < xTope; ++x) {
+            if (!esRelleno(p.furia.pixelColor(x, y)))
+                continue;
+            if (primero < 0)
+                primero = x;
+            ultimo = x;
+            ++cuenta;
+        }
+        if (cuenta <= 30)
+            continue;
+        p.furiaDesde[y] = primero;
+        p.furiaHasta[y] = ultimo;
+        p.furiaOrigen = qMin(p.furiaOrigen, primero);
+        p.furiaFin = qMax(p.furiaFin, ultimo);
+    }
 }
 
 QImage componerMarcador(const PiezasHud &p, int vidas, float salud, int municion, int granadas, float furia) {
@@ -139,7 +170,19 @@ QImage componerMarcador(const PiezasHud &p, int vidas, float salud, int municion
                               : 56;
     QImage balasD = pieza(p.balas, altoMedio);
     QImage granadasD = pieza(p.granadas, altoMedio);
-    QImage furiaD = pieza(p.furia, altoMedio);
+    QImage furiaSrc = p.furia;
+    if (furiaParte < 0.999f && p.furiaOrigen < p.furiaFin && !p.furiaDesde.isEmpty()) {
+        const int corte = p.furiaOrigen + qRound(float(p.furiaFin - p.furiaOrigen) * furiaParte);
+        for (int y = 0; y < furiaSrc.height() && y < p.furiaDesde.size(); ++y) {
+            const int desde = p.furiaDesde.at(y);
+            const int hasta = p.furiaHasta.at(y);
+            if (desde < 0)
+                continue;
+            for (int x = qMax(corte, desde); x <= hasta && x < furiaSrc.width(); ++x)
+                furiaSrc.setPixelColor(x, y, p.tapa);
+        }
+    }
+    QImage furiaD = pieza(furiaSrc, altoMedio);
 
     const float ev = p.vidas.height() > 0 ? float(vidasD.height()) / float(p.vidas.height()) : 1.f;
     const float es = p.salud.height() > 0 ? float(saludD.height()) / float(p.salud.height()) : 1.f;
@@ -188,15 +231,10 @@ QImage componerMarcador(const PiezasHud &p, int vidas, float salud, int municion
     pb.end();
 
     QPainter pg(&granadasD);
-    pintarCifra(pg, escalar(p.cifraGranadas, eg), QString::number(qMax(0, granadas)), tamComun);
+    pintarCifra(pg, escalar(p.cifraGranadas, eg), QString::number(qMax(0, granadas)) + QStringLiteral("/6"), tamComun);
     pg.end();
 
     QPainter pf(&furiaD);
-    if (!p.rellenoFuria.isEmpty()) {
-        const int lleno = qRound(p.rellenoFuria.width() * furiaParte);
-        const QRect hueco(p.rellenoFuria.x() + lleno, p.rellenoFuria.y(), p.rellenoFuria.width() - lleno, p.rellenoFuria.height());
-        pf.fillRect(escalar(hueco, ef), p.tapa);
-    }
     pintarCifra(pf, escalar(p.cifraFuria, ef), QString::number(qRound(furiaParte * 100.f)) + QStringLiteral("%"), tamComun);
     pf.end();
 

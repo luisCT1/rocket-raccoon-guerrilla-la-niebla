@@ -155,7 +155,7 @@ QPixmap pintarTorre() {
 EscenaAsalto::EscenaAsalto() {
     setSceneRect(0, 0, 1600, 1200);
     setBackgroundBrush(QColor(78, 112, 68));
-    sonidos = new Sonido(this);
+    sonidos = new Sonido(this, NIVEL_ASALTO);
     cargarSprites();
     juego = new Juego();
     juego->iniciarNivel(NIVEL_ASALTO, DIF_NORMAL);
@@ -371,11 +371,13 @@ QPixmap EscenaAsalto::cuadroDe(Entidad *entidad) const {
             lista = &furia;
         else if (granadaMuestra > 0.f && !lanzar.isEmpty())
             lista = &lanzar;
-        else if (teclas.contains(Qt::Key_Space) && !disparar.isEmpty())
+        else if (rocket->muestraArma() && !disparar.isEmpty())
             lista = &disparar;
         else
             lista = &caminar;
-        if (rocket->getVidas() <= 0)
+        if (lista == &disparar)
+            indice = rocket->cuadroArma();
+        else if (rocket->getVidas() <= 0)
             indice = lista->isEmpty() ? 0 : lista->size() - 1;
         else if (rocket->estadoVisual() == 0 && lista == &caminar)
             indice = 0;
@@ -384,7 +386,7 @@ QPixmap EscenaAsalto::cuadroDe(Entidad *entidad) const {
     } else if (entidad->clase() == CLASE_ENEMIGO) {
         auto *enemigo = static_cast<Enemigo *>(entidad);
         lista = enemigo->llevaArma() && !soldadoDispara.isEmpty() ? &soldadoDispara : &soldadoCamina;
-        indice = enemigo->llevaArma() ? int(tiempo * 8.f) : 0;
+        indice = enemigo->llevaArma() ? enemigo->cuadroCombate(lista->size()) : 0;
     }
     if (!lista || lista->isEmpty())
         return {};

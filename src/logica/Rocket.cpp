@@ -16,6 +16,7 @@ constexpr float V_GRANADA = 380.f;
 constexpr float ALCANCE_GRANADA = 450.f;
 constexpr float CAIDA_BALA = 0.08f;
 constexpr float DANIO_BALA = 25.f;
+constexpr float DANIO_FURIA = 75.f;
 constexpr float DANIO_GRANADA = 60.f;
 constexpr float RADIO_BALA = 12.f;
 constexpr float RADIO_GRANADA = 70.f;
@@ -32,7 +33,7 @@ constexpr float CAIDA_RUIDO = 180.f;
 constexpr float TIEMPO_INVULNERABLE = 1.f;
 constexpr float AVISO_GRANADA = 0.5f;
 constexpr short MUNICION_MAX = 20;
-constexpr short GRANADAS_MAX = 5;
+constexpr short GRANADAS_MAX = 6;
 constexpr short VIDAS_MAX = 3;
 constexpr float DIAGONAL = 0.7071f;
 }
@@ -74,7 +75,18 @@ Rocket::Rocket(float x_, float y_)
       pasoAcum(0.f),
       agachadoAntes(false),
       agacharPendiente(false),
-      aterrizajePendiente(false) {}
+      aterrizajePendiente(false),
+      furiaFinPendiente(false),
+      sinBalasPendiente(false),
+      sinBalasAvisado(false),
+      vidaPendiente(false),
+      muestraDisparo(false),
+      tiempoMuestra(0.f),
+      esperaBoca(0.f),
+      balaLista(false),
+      balaObjX(0.f),
+      balaObjY(0.f),
+      balaFuriosa(false) {}
 
 Rocket::~Rocket() {}
 
@@ -89,12 +101,23 @@ void Rocket::actualizar(float dt) {
     if (invulnerable > 0.f) invulnerable -= dt;
     if (avisoGranada > 0.f) avisoGranada -= dt;
     if (radioRuido > 0.f) radioRuido = std::max(0.f, radioRuido - CAIDA_RUIDO * dt);
+    if (muestraDisparo) {
+        tiempoMuestra += dt;
+        if (esperaBoca > 0.f) {
+            esperaBoca -= dt;
+            if (esperaBoca <= 0.f)
+                balaLista = true;
+        }
+        if (esperaBoca <= 0.f && !balaLista && tiempoMuestra > 0.55f)
+            muestraDisparo = false;
+    }
 
     if (furioso) {
         tiempoFuria -= dt;
         if (tiempoFuria <= 0.f) {
             furioso = false;
             tiempoFuria = 0.f;
+            furiaFinPendiente = true;
         }
     }
     if (!enSuelo || cenital) agachado = false;
@@ -169,28 +192,80 @@ bool Rocket::saltar() {
     return true;
 }
 
+Proyectil *Rocket::crearDisparo(float objX, float objY, bool furia) {
+    const float cx = x + ancho * 0.5f;
+    const float dir = objX >= cx ? 1.f : -1.f;
+    float bocaX = cx + dir * 42.f;
+    float bocaY = y - 8.f;
+    if (agachado) {
+        bocaX = cx + dir * 34.f;
+        bocaY = y + alto * 0.42f;
+    } else if (furia) {
+        bocaX = cx + dir * 46.f;
+        bocaY = y - 16.f;
+    }
+    float ang = std::atan2(-(objY - bocaY), objX - bocaX);
+    if (furia)
+        ang += static_cast<float>((municion % 3) - 1) * DISPERSION_FURIA;
+    if (!cenital) direccion = objX >= cx ? 'R' : 'L';
+
+    Proyectil *p = new Proyectil(bocaX - 8.f, bocaY - 8.f, RADIO_BALA, true);
+    p->fijarDanio(furia ? DANIO_FURIA : DANIO_BALA);
+    p->fijarTiempoVida(1.6f);
+    const float velDisparo = furia ? V_DISPARO * 1.45f : V_DISPARO;
+    p->agregarModelo(new MovParabolico(p->getX(), p->getY(), velDisparo, ang, cenital ? 0.f : GRAVEDAD * CAIDA_BALA));
+    return p;
+}
+
 Proyectil *Rocket::disparar(float objX, float objY) {
-    if (bloqueoDisparo > 0.f || recargaDisparo > 0.f) return nullptr;
+    if (bloqueoDisparo > 0.f || recargaDisparo > 0.f || esperaBoca > 0.f || balaLista) return nullptr;
     const short costo = furioso ? 2 : 1;
     if (municion < costo) return nullptr;
     municion = static_cast<short>(municion - costo);
-    recargaDisparo = furioso ? CADENCIA_FURIA : CADENCIA;
-
-    const float cx = x + ancho * 0.5f;
-    const float cy = y + alto * 0.35f;
-    float ang = std::atan2(-(objY - cy), objX - cx);
-    if (furioso) {
-
-        ang += static_cast<float>((municion % 3) - 1) * DISPERSION_FURIA;
+    if (municion <= 0 && !sinBalasAvisado) {
+        municion = 0;
+        sinBalasAvisado = true;
+        sinBalasPendiente = true;
     }
-    if (!cenital) direccion = objX >= cx ? 'R' : 'L';
+    recargaDisparo = furioso ? CADENCIA_FURIA : CADENCIA;
+    if (furioso || agachado)
+        return crearDisparo(objX, objY, furioso);
 
-    Proyectil *p = new Proyectil(cx - 8.f, cy - 8.f, RADIO_BALA, true);
-    p->fijarDanio(furioso ? DANIO_BALA * 2.f : DANIO_BALA);
-    p->fijarTiempoVida(1.6f);
-    const float velDisparo = furioso ? V_DISPARO * 1.45f : V_DISPARO;
-    p->agregarModelo(new MovParabolico(p->getX(), p->getY(), velDisparo, ang, cenital ? 0.f : GRAVEDAD * CAIDA_BALA));
-    return p;
+    if (!muestraDisparo) {
+        muestraDisparo = true;
+        tiempoMuestra = 0.f;
+    }
+    const float ciclo = std::fmod(std::max(0.f, tiempoMuestra), 0.5f);
+    const float fogonazos[2] = {2.f / 12.f, 4.f / 12.f};
+    float espera = -1.f;
+    for (float marca : fogonazos) {
+        if (marca + 0.012f >= ciclo) {
+            espera = marca - ciclo;
+            break;
+        }
+    }
+    if (espera < 0.f)
+        espera = (0.5f - ciclo) + fogonazos[0];
+    if (espera < 0.016f)
+        espera = 0.016f;
+    esperaBoca = espera;
+    balaObjX = objX;
+    balaObjY = objY;
+    balaFuriosa = false;
+    return nullptr;
+}
+
+Proyectil *Rocket::consumirBala() {
+    if (!balaLista) return nullptr;
+    balaLista = false;
+    esperaBoca = 0.f;
+    return crearDisparo(balaObjX, balaObjY, balaFuriosa);
+}
+
+bool Rocket::muestraArma() const { return muestraDisparo; }
+
+int Rocket::cuadroArma() const {
+    return std::max(0, int(tiempoMuestra * 12.f));
 }
 
 Proyectil *Rocket::lanzarGranada(float objX, float objY) {
@@ -261,13 +336,14 @@ void Rocket::recibirDanio(float cantidad) {
     if (cantidad < 8.f) cantidad = 25.f;
     cayo = false;
     salud -= cantidad;
-    golpePendiente = true;
     if (salud > 0.f) {
+        golpePendiente = true;
         invulnerable = 0.4f;
         return;
     }
     salud = 0.f;
     --vidas;
+    vidaPendiente = true;
     if (vidas > 0) {
         salud = saludMax;
         invulnerable = TIEMPO_INVULNERABLE;
@@ -285,7 +361,7 @@ void Rocket::perderVida() {
     if (vidas <= 0) return;
     --vidas;
     cayo = true;
-    golpePendiente = true;
+    vidaPendiente = true;
     salud = vidas > 0 ? saludMax : 0.f;
 }
 
@@ -310,6 +386,8 @@ bool Rocket::recogerMunicion(short cantidad) {
     if (cantidad <= 0 || municion >= MUNICION_MAX)
         return false;
     municion = std::min<short>(MUNICION_MAX, static_cast<short>(municion + cantidad));
+    if (municion > 0)
+        sinBalasAvisado = false;
     recogidaPendiente = true;
     tipoRecogida = RECO_MUNICION;
     return true;
@@ -344,6 +422,24 @@ bool Rocket::lanzoGranadaReciente() const {
 bool Rocket::consumirGolpe() {
     const bool r = golpePendiente;
     golpePendiente = false;
+    return r;
+}
+
+bool Rocket::consumirVida() {
+    const bool r = vidaPendiente;
+    vidaPendiente = false;
+    return r;
+}
+
+bool Rocket::consumirFinFuria() {
+    const bool r = furiaFinPendiente;
+    furiaFinPendiente = false;
+    return r;
+}
+
+bool Rocket::consumirSinBalas() {
+    const bool r = sinBalasPendiente;
+    sinBalasPendiente = false;
     return r;
 }
 

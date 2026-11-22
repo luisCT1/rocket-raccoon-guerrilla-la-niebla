@@ -24,6 +24,9 @@ protected:
     bool avanzo;
     short aspecto;
     float tiempoArma;
+    float tiempoPose;
+    int cuadroPrevio;
+    bool enBoca;
 
     void notarDesplazamiento(float x0, float y0);
 
@@ -56,6 +59,7 @@ public:
     bool esMontado() const;
     bool suenaElPaso() const;
     bool llevaArma() const;
+    int cuadroCombate(int total) const;
     float getVida() const;
     char getDireccion() const;
 };

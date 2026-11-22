@@ -21,6 +21,10 @@ struct PiezasHud {
     QImage furia;
     QRect rellenoFuria;
     QRect cifraFuria;
+    QVector<int> furiaDesde;
+    QVector<int> furiaHasta;
+    int furiaOrigen;
+    int furiaFin;
     QColor tapa;
 };
 

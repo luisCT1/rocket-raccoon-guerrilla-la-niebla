@@ -96,6 +96,12 @@ void Nivel::actualizar(float dt) {
 
     disparosEnemigos();
     if (rocket) {
+        if (Proyectil *bala = rocket->consumirBala()) {
+            agregarEntidad(bala);
+            emitirEvento(EV_DISPARO_ROCKET);
+        }
+    }
+    if (rocket) {
         if (cenital) bloquearContraEstructuras();
         else resolverApoyo();
     }
@@ -111,6 +117,8 @@ void Nivel::actualizar(float dt) {
     if (rocket && rocket->consumirPaso()) emitirEvento(EV_PASO);
     if (rocket && rocket->consumirAgacharse()) emitirEvento(EV_AGACHARSE);
     if (rocket && rocket->consumirAterrizaje()) emitirEvento(EV_ATERRIZAJE);
+    if (rocket && rocket->consumirFinFuria()) emitirEvento(EV_FURIA_FIN);
+    if (rocket && rocket->consumirSinBalas()) emitirEvento(EV_SIN_BALAS);
     ambiente(dt);
     explosiones();
     notificarGolpe();
@@ -341,12 +349,18 @@ void Nivel::explosionEn(float cx, float cy, float radio, float danio, bool deRoc
         if (!e->estaViva() || c == CLASE_PROYECTIL) continue;
         if (deRocket == (c == CLASE_ROCKET)) continue;
 
+        float x0 = e->getX();
+        float y0 = e->getY();
+        float x1 = x0 + e->getAncho();
+        float y1 = y0 + e->getAlto();
+        if (radio < RADIO_MIN_EXPLOSION)
+            cajaDeTiro(e, x0, y0, x1, y1);
         float dx = 0.f;
-        if (cx < e->getX()) dx = e->getX() - cx;
-        else if (cx > e->getX() + e->getAncho()) dx = cx - (e->getX() + e->getAncho());
+        if (cx < x0) dx = x0 - cx;
+        else if (cx > x1) dx = cx - x1;
         float dy = 0.f;
-        if (cy < e->getY()) dy = e->getY() - cy;
-        else if (cy > e->getY() + e->getAlto()) dy = cy - (e->getY() + e->getAlto());
+        if (cy < y0) dy = y0 - cy;
+        else if (cy > y1) dy = cy - y1;
         if (dx * dx + dy * dy > r2) continue;
 
         e->recibirDanio(danio);
@@ -358,7 +372,9 @@ void Nivel::explosionEn(float cx, float cy, float radio, float danio, bool deRoc
 }
 
 void Nivel::notificarGolpe() {
-    if (rocket && rocket->consumirGolpe()) emitirEvento(EV_GOLPE_A_ROCKET);
+    if (!rocket) return;
+    if (rocket->consumirVida()) emitirEvento(EV_VIDA_PERDIDA);
+    else if (rocket->consumirGolpe()) emitirEvento(EV_GOLPE_A_ROCKET);
 }
 
 void Nivel::eliminarMuertas() {

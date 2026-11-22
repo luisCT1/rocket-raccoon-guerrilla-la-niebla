@@ -32,6 +32,7 @@ private:
     bool sablePendiente;
     bool sableSonado;
     bool vozPendiente;
+    bool impactoPendiente;
     float vozEspera;
     short inicioAccion;
     MovCircular *giro;
@@ -66,6 +67,8 @@ private:
     float tasaAprendizaje;
     short estimuloPrevio;
     float tiempoAlto, tiempoLejos;
+    float bajoFuego;
+    bool seAcerca;
 
     void finalizarAccion();
     void moverse(float dt);
@@ -92,6 +95,7 @@ public:
     bool consumirCambioFase();
     bool consumirSable();
     bool consumirVoz();
+    bool consumirImpacto();
     short consumirInicioAccion();
     void resultadoCanon(bool acerto);
     void fijarCanonDisponible(bool disponible);

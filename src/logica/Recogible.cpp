@@ -44,10 +44,10 @@ void Recogible::alChocar(Entidad &otra) {
         tomo = rocket.recogerVida();
         break;
     case RECO_MUNICION:
-        tomo = rocket.recogerMunicion(5);
+        tomo = rocket.recogerMunicion(10);
         break;
     case RECO_GRANADA:
-        tomo = rocket.recogerGranadas(2);
+        tomo = rocket.recogerGranadas(3);
         break;
     case RECO_FURIA:
         tomo = rocket.recogerFuria(0.2f);

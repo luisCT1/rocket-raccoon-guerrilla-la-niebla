@@ -16,6 +16,7 @@ private:
     Estructura *canon;
     std::vector<Proyectil *> disparosCanon;
     bool canonAvisado;
+    bool vozInicio;
 
     void seguirDisparos();
     void moverCamara(float dt);

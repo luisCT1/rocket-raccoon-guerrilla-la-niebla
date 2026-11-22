@@ -44,6 +44,19 @@ private:
     bool agachadoAntes;
     bool agacharPendiente;
     bool aterrizajePendiente;
+    bool furiaFinPendiente;
+    bool sinBalasPendiente;
+    bool sinBalasAvisado;
+    bool vidaPendiente;
+    bool muestraDisparo;
+    float tiempoMuestra;
+    float esperaBoca;
+    bool balaLista;
+    float balaObjX;
+    float balaObjY;
+    bool balaFuriosa;
+
+    Proyectil *crearDisparo(float objX, float objY, bool furia);
 
 public:
     Rocket(float x, float y);
@@ -58,6 +71,9 @@ public:
     bool saltar();
 
     Proyectil *disparar(float objX, float objY);
+    Proyectil *consumirBala();
+    bool muestraArma() const;
+    int cuadroArma() const;
     Proyectil *lanzarGranada(float objX, float objY);
     bool dash(char dir);
     bool activarFuria();
@@ -73,6 +89,9 @@ public:
     float ruidoActual() const;
     bool lanzoGranadaReciente() const;
     bool consumirGolpe();
+    bool consumirVida();
+    bool consumirFinFuria();
+    bool consumirSinBalas();
     short consumirRecogida();
     bool consumirPaso();
     bool consumirAgacharse();

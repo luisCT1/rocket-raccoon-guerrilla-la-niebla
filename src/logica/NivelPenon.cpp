@@ -33,7 +33,7 @@ constexpr float SEGUIMIENTO_CAMARA = 5.f;
 }
 
 NivelPenon::NivelPenon(short nivelDificultad, Capitan::Memoria *memoria)
-    : capitan(nullptr), dificultad(nivelDificultad), banderaPuesta(false), canon(nullptr), canonAvisado(false) {
+    : capitan(nullptr), dificultad(nivelDificultad), banderaPuesta(false), canon(nullptr), canonAvisado(false), vozInicio(false) {
     anchoMundo = ANCHO_MUNDO;
     altoMundo = ALTO_MUNDO;
     cenital = false;
@@ -78,6 +78,10 @@ NivelPenon::~NivelPenon() {}
 
 void NivelPenon::actualizar(float dt) {
     if (terminado) return;
+    if (!vozInicio) {
+        vozInicio = true;
+        emitirEvento(EV_VOZ_RINDE);
+    }
     Nivel::actualizar(dt);
     if (capitan && capitan->estaPersiguiendo())
         capitan->fijarLimites(40.f, anchoMundo - capitan->getAncho() - 20.f);
@@ -93,8 +97,8 @@ void NivelPenon::actualizar(float dt) {
     const short accion = capitan->consumirInicioAccion();
     if (accion == ACC_GIRATORIO) emitirEvento(EV_ATAQUE_GIRATORIO);
     else if (accion == ACC_TROMBA) emitirEvento(EV_TROMBA);
+    else if (accion == ACC_ACOSAR && capitan->getFase() == FASE_ACOSA) emitirEvento(EV_VOZ_NO_ESCAPARAS);
     if (capitan->consumirSable()) emitirEvento(EV_SABLE);
-    if (capitan->consumirVoz()) emitirEvento(EV_VOZ);
 
     float objX, objY;
     if (capitan->consumirOrdenCanon(objX, objY)) {
@@ -103,12 +107,17 @@ void NivelPenon::actualizar(float dt) {
             agregarEntidad(p);
             disparosCanon.push_back(p);
             emitirEvento(EV_CANON_DISPARA);
+            if (capitan->getFase() == FASE_CANON) emitirEvento(EV_VOZ_FUEGO);
         }
     }
     seguirDisparos();
 
     if (capitan->alcanzaA(rocket) && rocket->recibirDanio()) capitan->confirmarGolpe();
     notificarGolpe();
+    if (capitan->consumirImpacto()) {
+        if (capitan->estaDerrotado()) emitirEvento(EV_VOZ_IMPOSIBLE);
+        else emitirEvento(EV_VOZ_ALIMANA);
+    }
 
     if (capitan->consumirCambioFase()) cambiarFase();
 
@@ -222,6 +231,7 @@ void NivelPenon::alBorrar(Entidad *e) {
 
 void NivelPenon::cambiarFase() {
     emitirEvento(EV_CAMBIO_FASE_JEFE);
+    if (capitan && capitan->getFase() == FASE_AGRESIVO) emitirEvento(EV_VOZ_CARGA);
 }
 
 void NivelPenon::ponerBandera() {

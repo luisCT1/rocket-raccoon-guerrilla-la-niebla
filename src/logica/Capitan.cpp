@@ -64,7 +64,7 @@ Capitan::Capitan(float x_, float y_, Memoria *memoria_)
       fase(FASE_ACOSA), vidaMax(VIDA_CAPITAN), acumulador(0.f), descanso(0.f),
       resultadoReportado(true), yaGolpeo(false),
       ordenCanon(false), canonX(0.f), canonY(0.f), cambioFase(false),
-      sablePendiente(false), sableSonado(false), vozPendiente(false), vozEspera(0.f),
+      sablePendiente(false), sableSonado(false), vozPendiente(false), impactoPendiente(false), vozEspera(0.f),
       inicioAccion(ACC_NINGUNA),
       giro(nullptr), factorVelocidad(1.f), derrotado(false), encontrado(false),
       estimuloVisible(ESTIM_NINGUNO), intensidadEstimulo(0.f), distanciaRocket(0.f), ladoRocket(1), rocketEnAlto(false),
@@ -73,7 +73,8 @@ Capitan::Capitan(float x_, float y_, Memoria *memoria_)
       idAccion(ACC_NINGUNA), accionRestante(0.f), accionDuracion(0.f), destinoX(0.f), destinoY(0.f),
       accionFinalizada(true), accionAcierto(false),
       memoriaPropia(), memoria(memoria_ ? memoria_ : &memoriaPropia),
-      tasaAprendizaje(0.2f), estimuloPrevio(ESTIM_NINGUNO), tiempoAlto(0.f), tiempoLejos(0.f) {
+      tasaAprendizaje(0.2f), estimuloPrevio(ESTIM_NINGUNO), tiempoAlto(0.f), tiempoLejos(0.f),
+      bajoFuego(0.f), seAcerca(false) {
     recargas.fill(0.f);
     sinUsar.fill(0.f);
     bloqueadas.fill(false);
@@ -103,6 +104,11 @@ void Capitan::actualizar(float dt) {
     actualizarAccion(dt);
     if (vozEspera > 0.f)
         vozEspera = vozEspera > dt ? vozEspera - dt : 0.f;
+    if (bajoFuego > 0.f) {
+        bajoFuego = bajoFuego > dt ? bajoFuego - dt : 0.f;
+        if (descanso > 0.f)
+            descanso = descanso > dt ? descanso - dt : 0.f;
+    }
 
     if (accionFinalizada && !resultadoReportado) {
         finalizarAccion();
@@ -165,8 +171,16 @@ void Capitan::moverse(float dt) {
     } else if (!accionFinalizada && idAccion == ACC_CANON) {
         if (dist < 280.f) paso = -sentido * vel * 0.65f;
         else if (dist > 520.f) paso = sentido * vel * 0.65f;
-    } else if (encontrado && dist > 620.f) {
-        paso = sentido * vel;
+    } else if (encontrado && accionFinalizada) {
+        const short idea = decidir();
+        if (idea == ACC_CANON) {
+            if (dist < 250.f) paso = -sentido * vel * 0.75f;
+            else if (dist > 460.f) paso = sentido * vel * 0.8f;
+        } else if (idea == ACC_REPLEGARSE) {
+            paso = -sentido * vel;
+        } else if (dist > 120.f) {
+            paso = sentido * vel * (bajoFuego > 0.f ? 1.15f : 0.9f);
+        }
     }
     x += paso;
     if (x < minX) x = minX;
@@ -194,6 +208,8 @@ void Capitan::alChocar(Entidad &otra) {
 
 void Capitan::recibirDanio(float cantidad) {
     if (derrotado || cantidad <= 0.f) return;
+    impactoPendiente = true;
+    bajoFuego = 2.6f;
     vida -= cantidad;
     if (vida <= 0.f) {
         vida = 0.f;
@@ -280,6 +296,12 @@ bool Capitan::consumirVoz() {
     return c;
 }
 
+bool Capitan::consumirImpacto() {
+    const bool c = impactoPendiente;
+    impactoPendiente = false;
+    return c;
+}
+
 void Capitan::pedirVoz() {
     if (derrotado || vozEspera > 0.f) return;
     vozPendiente = true;
@@ -355,6 +377,8 @@ void Capitan::percibir(const Rocket *r, float dt) {
     distanciaRocket = std::sqrt(dx * dx + dy * dy);
     ladoRocket = dx >= 0.f ? 1 : -1;
     rocketEnAlto = r->getCentroY() < getCentroY() - UMBRAL_ALTO;
+    const float distPrevia = std::fabs((r->getXAnterior() + r->getAncho() * 0.5f) - getCentroX());
+    seAcerca = distPrevia > std::fabs(dx) + 0.6f;
 
     short tipo = ESTIM_NINGUNO;
     float inten = 0.f;
@@ -420,25 +444,50 @@ float Capitan::puntaje(short a) const {
 
     s = (a == ACC_REPLEGARSE) ? s / agresividad : s * agresividad;
 
-    if (distanciaRocket < CERCA) {
+    if (distanciaRocket < 95.f) {
+        if (a == ACC_ACOSAR) s += 2.8f;
+        else if (a == ACC_GIRATORIO) s += 1.6f;
+        else if (a == ACC_CANON) s -= 2.4f;
+    } else if (distanciaRocket < CERCA) {
         if (a == ACC_ACOSAR) s += 2.f;
         else if (a == ACC_GIRATORIO) s += 1.5f;
+        else if (a == ACC_TROMBA && !rocketEnAlto) s += 0.8f;
+    } else if (distanciaRocket < 230.f && !rocketEnAlto) {
+        if (a == ACC_ACOSAR) s += 1.4f;
+        else if (a == ACC_TROMBA) s += 0.7f;
     } else if (distanciaRocket > LEJOS) {
         if (a == ACC_CANON) s += 2.f;
         else if (a == ACC_ACOSAR) s -= 1.5f;
     }
+    if (seAcerca && distanciaRocket < LEJOS) {
+        if (a == ACC_ACOSAR) s += 1.2f;
+        else if (a == ACC_GIRATORIO) s += 0.9f;
+    } else if (!seAcerca && distanciaRocket > LEJOS) {
+        if (a == ACC_CANON) s += 1.3f;
+        else if (a == ACC_TROMBA) s += 0.7f;
+    }
     if (rocketEnAlto) {
-        if (a == ACC_CANON) s += 1.f;
-        else if (a == ACC_ACOSAR) s -= 1.f;
+        if (a == ACC_CANON) s += 1.6f;
+        else if (a == ACC_ACOSAR) s -= 1.4f;
+        else if (a == ACC_TROMBA) s -= 0.8f;
+    }
+    if (bajoFuego > 0.f && distanciaRocket > CERCA) {
+        if (a == ACC_ACOSAR) s += 2.1f;
+        else if (a == ACC_TROMBA) s += 1.3f;
+        else if (a == ACC_REPLEGARSE) s -= 1.2f;
     }
     if (dashReciente()) {
-        if (a == ACC_GIRATORIO) s += 2.f;
+        if (a == ACC_GIRATORIO) s += 2.4f;
+        else if (a == ACC_TROMBA) s += 1.5f;
         else if (a == ACC_ACOSAR) s += 1.f;
     }
     if (granadaReciente()) {
-        if (a == ACC_REPLEGARSE) s += 1.5f;
-        else if (a == ACC_TROMBA) s += 1.f;
+        if (a == ACC_REPLEGARSE) s += 2.4f;
+        else if (a == ACC_TROMBA && distanciaRocket < CERCA) s += 1.6f;
+        else if (a == ACC_CANON) s -= 0.8f;
     }
+    if (a == ACC_CANON && peso(ACC_CANON) < -0.35f && distanciaRocket < LEJOS)
+        s -= 1.8f;
     return s + peso(a);
 }
 

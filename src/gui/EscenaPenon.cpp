@@ -223,7 +223,7 @@ QPixmap pieza(const QPixmap &hoja, const QRect &zona) {
 EscenaPenon::EscenaPenon() {
     setSceneRect(0, 0, 3920, 720);
     setBackgroundBrush(QColor(150, 176, 186));
-    sonidos = new Sonido(this);
+    sonidos = new Sonido(this, NIVEL_PENON);
     juego = new Juego();
     juego->iniciarNivel(NIVEL_PENON, DIF_NORMAL);
     nivel = dynamic_cast<NivelPenon *>(juego->nivelActivo());
@@ -774,13 +774,15 @@ QPixmap EscenaPenon::cuadroDe(Entidad *entidad) const {
             lista = &agachar;
         else if (granadaMuestra > 0.f)
             lista = &lanzar;
-        else if (teclas.contains(Qt::Key_Space))
+        else if (rocket->muestraArma())
             lista = &disparar;
         else if (estado == 0)
             lista = espera.isEmpty() ? &caminar : &espera;
         else
             lista = &caminar;
-        if (rocket->getVidas() <= 0)
+        if (lista == &disparar)
+            indice = rocket->cuadroArma();
+        else if (rocket->getVidas() <= 0)
             indice = lista->isEmpty() ? 0 : lista->size() - 1;
         else if (estado == 0 && lista != &rocketDanio)
             indice = 0;

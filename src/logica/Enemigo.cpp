@@ -15,6 +15,8 @@ constexpr float VIDA_BALA = 2.2f;
 constexpr float RADIO_PATRULLA = 80.f;
 constexpr float V_CORREO = 70.f;
 constexpr float V_MARCHA = 34.f;
+constexpr float FPS_ARMA = 7.f;
+constexpr int CUADROS_ARMA = 6;
 }
 
 Enemigo::Enemigo(float x_, float y_)
@@ -34,7 +36,10 @@ Enemigo::Enemigo(float x_, float y_)
       persiguiendo(false),
       avanzo(false),
       aspecto(0),
-      tiempoArma(0.f) {}
+      tiempoArma(0.f),
+      tiempoPose(0.f),
+      cuadroPrevio(-1),
+      enBoca(false) {}
 
 Enemigo::~Enemigo() {}
 
@@ -92,6 +97,18 @@ void Enemigo::actualizar(float dt) {
     }
     if (persiguiendo && !esCorreo && tiempoArma < 3.f)
         tiempoArma += dt;
+    if (llevaArma()) {
+        const int antes = cuadroPrevio;
+        tiempoPose += dt;
+        const int ahora = int(tiempoPose * FPS_ARMA) % CUADROS_ARMA;
+        const int fogonazo = esMontado() ? 4 : 1;
+        enBoca = ahora == fogonazo && ahora != antes;
+        cuadroPrevio = ahora;
+    } else {
+        tiempoPose = 0.f;
+        cuadroPrevio = -1;
+        enBoca = false;
+    }
     notarDesplazamiento(x0, y0);
 }
 
@@ -125,7 +142,7 @@ bool Enemigo::veA(const Rocket *r) const {
 }
 
 bool Enemigo::listoParaDisparar() const {
-    if (esCorreo || !viva || !llevaArma() || recargaDisparo > 0.f || !objetivo || !veA(objetivo)) return false;
+    if (esCorreo || !viva || !llevaArma() || !enBoca || recargaDisparo > 0.f || !objetivo || !veA(objetivo)) return false;
     const float dx = objetivo->getCentroX() - getCentroX();
     const float dy = objetivo->getCentroY() - getCentroY();
     return dx * dx + dy * dy <= ALCANCE_DISPARO * ALCANCE_DISPARO;
@@ -137,8 +154,9 @@ Proyectil *Enemigo::disparar(float objX, float objY) {
 
     const float cx = getCentroX();
     const float dir = objX >= cx ? 1.f : -1.f;
-    const float bocaX = cx + dir * 28.f;
-    const float bocaY = y + 6.f;
+    const bool montado = esMontado();
+    const float bocaX = cx + dir * (montado ? 58.f : 54.f);
+    const float bocaY = y + (montado ? -30.f : -4.f);
     const float ang = std::atan2(-(objY - bocaY), objX - bocaX);
 
     Proyectil *p = new Proyectil(bocaX - 8.f, bocaY - 8.f, RADIO_BALA, false);
@@ -188,6 +206,11 @@ bool Enemigo::llevaArma() const {
     if (esCorreo) return false;
     const float demora = (aspecto == 1 || aspecto >= 3) ? 0.92f : 0.48f;
     return tiempoArma >= demora;
+}
+
+int Enemigo::cuadroCombate(int total) const {
+    if (total <= 0) return 0;
+    return int(tiempoPose * FPS_ARMA) % total;
 }
 float Enemigo::getVida() const { return vida; }
 char Enemigo::getDireccion() const { return direccion; }

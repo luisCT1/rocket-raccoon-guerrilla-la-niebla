@@ -2,6 +2,7 @@
 #include "Rocket.h"
 #include "Enemigo.h"
 #include "Estructura.h"
+#include "Proyectil.h"
 #include "Recogible.h"
 #include "MovOscilatorio.h"
 #include "Eventos.h"
@@ -33,6 +34,9 @@ constexpr short MAX_SOLDADOS = 8;
 constexpr float ZONA_OLEADAS = 1300.f;
 constexpr float VISION_ALERTA = 700.f;
 constexpr float SEGUIMIENTO_CAMARA = 5.f;
+constexpr float CERCA_GRANADA = 160.f;
+constexpr float CERCA_BARRIL = 200.f;
+constexpr float ANCHO_GRUPO = 520.f;
 
 void apoyarEnSuelo(Entidad *e) {
     e->setPosicion(e->getX(), SUELO - e->getAlto());
@@ -49,6 +53,8 @@ NivelEmboscada::NivelEmboscada()
       crujido(0.f),
       intervaloOleada(6.f),
       tiempoOleada(0.f),
+      vozInicio(false),
+      agrupados(false),
       puente(nullptr),
       carretas{nullptr, nullptr, nullptr},
       barriles{nullptr, nullptr, nullptr},
@@ -100,6 +106,11 @@ NivelEmboscada::~NivelEmboscada() {}
 
 void NivelEmboscada::actualizar(float dt) {
     if (terminado) return;
+    if (!vozInicio) {
+        vozInicio = true;
+        emitirEvento(EV_VOZ_EMBOSCADA);
+        emitirEvento(EV_VOZ_SILENCIO);
+    }
     Nivel::actualizar(dt);
     avanzarConvoy(dt);
 
@@ -121,6 +132,8 @@ void NivelEmboscada::actualizar(float dt) {
     for (short i = 0; i < 3; ++i) {
         if (barriles[i] && barriles[i]->consumirDestruccion()) {
             emitirEvento(EV_EXPLOSION);
+            emitirEvento(EV_VOZ_POLVORA);
+            emitirEvento(EV_VOZ_ESTALLIDO);
             explosionEn(barriles[i]->getCentroX(), barriles[i]->getCentroY(), RADIO_BARRIL, DANIO_BARRIL, true);
         }
     }
@@ -129,12 +142,66 @@ void NivelEmboscada::actualizar(float dt) {
             --partesRestantes;
             salidaCorreo = carretas[i]->getX();
             emitirEvento(EV_TAREA_COMPLETADA);
+            emitirEvento(EV_VOZ_CONVOY);
+            emitirEvento(EV_VOZ_ESTALLIDO);
         }
     }
 
     if (partesRestantes <= 0 && !correo && !correoDetenido && !correoEscapo) soltarCorreo();
 
     revisarCorreo();
+
+    bool huboGranada = false;
+    bool huboDisparo = false;
+    for (short ev : eventos) {
+        if (ev == EV_GRANADA) huboGranada = true;
+        else if (ev == EV_DISPARO_ROCKET) huboDisparo = true;
+    }
+    if (huboGranada) {
+        const Proyectil *granada = nullptr;
+        for (Entidad *e : entidades) {
+            if (e->clase() != CLASE_PROYECTIL) continue;
+            const Proyectil *p = static_cast<const Proyectil *>(e);
+            if (p->esDeRocket() && p->esBombeado() && !p->yaExplotado())
+                granada = p;
+        }
+        if (granada) {
+            for (Entidad *e : entidades) {
+                if (e->clase() != CLASE_ENEMIGO || !e->estaViva()) continue;
+                const float dx = e->getCentroX() - granada->getDestinoX();
+                const float dy = e->getCentroY() - granada->getDestinoY();
+                if (dx * dx + dy * dy <= CERCA_GRANADA * CERCA_GRANADA) {
+                    emitirEvento(EV_VOZ_CUBRANSE);
+                    break;
+                }
+            }
+        }
+    }
+    if (huboDisparo && rocket) {
+        for (short i = 0; i < 3; ++i) {
+            Estructura *barril = barriles[i];
+            if (!barril || !barril->estaViva() || barril->estaDestruida()) continue;
+            const float dx = barril->getCentroX() - rocket->getCentroX();
+            const float dy = barril->getCentroY() - rocket->getCentroY();
+            if (dx * dx + dy * dy <= CERCA_BARRIL * CERCA_BARRIL) {
+                emitirEvento(EV_VOZ_POLVORA);
+                break;
+            }
+        }
+    }
+
+    float x0 = 1.0e9f;
+    float x1 = -1.0e9f;
+    int juntos = 0;
+    for (Entidad *e : entidades) {
+        if (e->clase() != CLASE_ENEMIGO || !e->estaViva()) continue;
+        ++juntos;
+        if (e->getX() < x0) x0 = e->getX();
+        if (e->getX() > x1) x1 = e->getX();
+    }
+    const bool ahoraJuntos = juntos >= 3 && x1 - x0 <= ANCHO_GRUPO;
+    if (ahoraJuntos && !agrupados) emitirEvento(EV_VOZ_CONVOY);
+    agrupados = ahoraJuntos;
 
     if (rocket->getX() > ZONA_OLEADAS) {
         tiempoOleada += dt;
@@ -226,6 +293,7 @@ void NivelEmboscada::generarOleada() {
     s->fijarLimites(0.f, LIMITE_DER);
     s->fijarAlcanceVision(VISION_ALERTA);
     agregarEntidad(s);
+    emitirEvento(EV_VOZ_REY);
 }
 
 void NivelEmboscada::moverCamara(float dt) {
