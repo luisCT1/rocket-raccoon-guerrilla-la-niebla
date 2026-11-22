@@ -28,7 +28,7 @@ Nivel *Juego::crearNivel(short n, short dif) {
 }
 
 void Juego::iniciarNivel(short n, short dif) {
-    if (dif < DIF_FACIL || dif > DIF_DIFICIL)
+    if (dif < DIF_NORMAL || dif > DIF_DIFICIL)
         throw std::out_of_range("Juego: esa dificultad no existe");
 
     //Primero se crea el nuevo: si algo falla, el nivel anterior queda intacto

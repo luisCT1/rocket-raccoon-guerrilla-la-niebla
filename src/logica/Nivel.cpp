@@ -4,6 +4,7 @@
 #include "Enemigo.h"
 #include "Proyectil.h"
 #include "Eventos.h"
+#include <stdexcept>
 
 namespace {
 constexpr float MARGEN_PIES = 8.f;        //los pies son un poco más angostos que el cuerpo
@@ -16,7 +17,7 @@ constexpr float MARGEN_MUNDO = 200.f;
 Nivel::Nivel()
     : tiempo(0.f), terminado(false), ganado(false), rocket(nullptr),
       anchoMundo(1280.f), altoMundo(720.f), cenital(false), ySuelo(1.0e9f), huecoIni(0.f), huecoFin(0.f),
-      camaraX(0.f), apoyo(nullptr), seguroX(0.f), seguroY(0.f) {
+      camaraX(0.f), anchoVista(1280.f), apoyo(nullptr), seguroX(0.f), seguroY(0.f) {
     //Se reserva una sola vez: agregar entidades durante el juego no mueve el vector de sitio
     entidades.reserve(128);
     eventos.reserve(32);
@@ -352,4 +353,10 @@ bool Nivel::esCenital() const { return cenital; }
 float Nivel::getAnchoMundo() const { return anchoMundo; }
 float Nivel::getAltoMundo() const { return altoMundo; }
 float Nivel::getCamaraX() const { return camaraX; }
+float Nivel::getAnchoVista() const { return anchoVista; }
+
+void Nivel::fijarAnchoVista(float ancho) {
+    if (ancho <= 0.f) throw std::invalid_argument("Nivel: el ancho de la vista debe ser positivo");
+    anchoVista = ancho;
+}
 float Nivel::getSuelo() const { return ySuelo; }

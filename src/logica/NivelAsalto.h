@@ -10,8 +10,6 @@ class Enemigo;
 class NivelAsalto : public Nivel {
 private:
     float tiempoRestante;
-    bool banderaIzada;
-    float progresoIzado;
 
     Estructura *polvorin;
     Estructura *bandera;
@@ -23,16 +21,16 @@ private:
     float radioConoBase;
     float aperturaConoBase;
     float avisoRefuerzos;
-    float avisoHuida;
+    float avisoResistencia;
+    float proximoSoldado;
     short siguientePunto;
+    short siguientePuerta;
     short nivelAlarma;
     bool coronelLlego;
-    bool huida;
+    bool resistencia;
 
     void revisarTareas();
-    void izarBandera(float dt);
     void mantenerEnElCampamento();
-    bool rocketEnSalida() const;
     void disparoDelCanon();
     void vigilar(float dt);
     void subirAlarma();
@@ -41,7 +39,7 @@ private:
     void soltarSoldados(short cuantos);
     void generarRefuerzos();
     void tareaCompletada();
-    void iniciarHuida();
+    void iniciarResistencia();
     float visionActual() const;
     Enemigo *crearSoldado(float x, float y);
 
@@ -57,13 +55,7 @@ public:
     float getTiempoRestante() const;
     bool estaPolvorinVolado() const;
     bool estaBanderaTumbada() const;
-    bool estaBanderaIzada() const;
     bool estaCanonInutilizado() const;
-    float getProgresoIzado() const;
-    float getZonaBanderaRadio() const;
-    float getSalidaX() const;
-    float getSalidaY() const;
-    float getSalidaRadio() const;
     Estructura *getPolvorin() const;
     Estructura *getBandera() const;
     Estructura *getCanon() const;
@@ -71,8 +63,8 @@ public:
 
     short getNivelAlarma() const;
     float getAvisoRefuerzos() const;
-    float getAvisoHuida() const;
-    bool estaEnHuida() const;
+    float getAvisoResistencia() const;
+    bool estaEnResistencia() const;
 };
 
 #endif

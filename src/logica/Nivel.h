@@ -6,6 +6,7 @@
 class Entidad;
 class Rocket;
 
+
 class Nivel {
 protected:
     float tiempo;
@@ -22,6 +23,7 @@ protected:
     float huecoIni;
     float huecoFin;
     float camaraX;
+    float anchoVista;
     std::vector<Entidad *> plataformas;
     Entidad *apoyo;
     float seguroX;
@@ -52,7 +54,7 @@ public:
     virtual bool victoria() const = 0;
     virtual bool derrota() const = 0;
 
-    void agregarEntidad(Entidad *e); //el Nivel queda como dueño
+    void agregarEntidad(Entidad *e);
     void colisiones();
     void eliminarMuertas();
     Rocket *jugador() const;
@@ -64,9 +66,8 @@ public:
     void jugadorDash();
     void jugadorActivaFuria();
 
-    //Lectura para la capa gráfica
     const std::vector<Entidad *> &obtenerEntidades() const;
-    void tomarEventos(std::vector<short> &destino); //intercambia los vectores: no reserva memoria
+    void tomarEventos(std::vector<short> &destino);
     float tiempoTranscurrido() const;
     bool estaTerminado() const;
     bool fueGanado() const;
@@ -74,6 +75,8 @@ public:
     float getAnchoMundo() const;
     float getAltoMundo() const;
     float getCamaraX() const;
+    float getAnchoVista() const;
+    void fijarAnchoVista(float ancho);
     float getSuelo() const;
 
     Nivel(const Nivel &) = delete;

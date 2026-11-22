@@ -31,10 +31,8 @@ HEADERS += \
     src/logica/NivelAsalto.h \
     src/logica/NivelPenon.h \
     src/logica/Eventos.h \
-    src/logica/AgenteTipos.h \
     src/logica/Capitan.h \
     src/logica/Juego.h \
-    src/gui/HojaSprites.h \
     src/gui/MenuInicio.h \
     src/gui/EscenaMision.h \
     src/gui/Marcador.h \
@@ -61,7 +59,6 @@ SOURCES += \
     src/logica/NivelPenon.cpp \
     src/logica/Capitan.cpp \
     src/logica/Juego.cpp \
-    src/gui/HojaSprites.cpp \
     src/gui/MenuInicio.cpp \
     src/gui/Marcador.cpp \
     src/gui/EscenaEmboscada.cpp \

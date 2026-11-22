@@ -72,7 +72,6 @@ const QRect CAJON_BALAS(126, 444, 115, 94);
 const QRect BARRIL_ROJO(516, 449, 58, 85);
 const QRect SACOS_2(947, 449, 174, 69);
 const QRect BANDERA_REAL_ROJA(1060, 550, 67, 139);
-const QRect BANDERA_TRICOLOR(1298, 555, 84, 138);
 const QRect HUMO_1(745, 861, 119, 127);
 const QRect HUMO_2(899, 881, 94, 105);
 const QRect EXPLOSION_1(1027, 856, 153, 145);
@@ -86,14 +85,12 @@ namespace {
 const float kVistaAncho = 1280.f;
 const float kVistaAlto = 720.f;
 const float kPi = 3.14159265f;
-const float kZSalida = 2.2f;
 const float kZCono = 2.3f;
 const float kZAviso = 2.35f;
 const float kZCuerpo = 2.4f;
 const float kZSombra = 2.5f;
 const float kZPersonaje = 3.f;
 const float kZHumo = 3.95f;
-const float kZZona = 2.25f;
 const float kZProyectil = 4.2f;
 const float kZEfecto = 5.f;
 const float kZFlecha = 6.f;
@@ -108,8 +105,6 @@ const float kChispaDuracion = 0.14f;
 const float kPanelAncho = 296.f;
 const float kMargen = 16.f;
 const int kMaxEfectos = 64;
-const int kTirasTricolor = 32;
-const int kPasosZona = 96;
 const float kBarreraAncho = 120.f;
 
 float limitar(float v, float lo, float hi) {
@@ -316,7 +311,6 @@ void EscenaAsalto::cargarSprites() {
         canonRoto = bloque(100, 60, QColor(36, 34, 32));
         barril = bloque(34, 50, QColor(176, 58, 42));
         barrera = bloque(int(kBarreraAncho), 48, QColor(170, 142, 92));
-        tricolor = bloque(34, 100, QColor(232, 196, 40));
     } else {
         torreA = escalar(recorte(escenario, Atlas::TORRE_A), 0.55f);
         torreB = escalar(recorte(escenario, Atlas::TORRE_B), 0.55f);
@@ -335,11 +329,6 @@ void EscenaAsalto::cargarSprites() {
         humoSubida = recorte(escenario, Atlas::HUMO_1);
         barril = escalar(recorte(escenario, Atlas::BARRIL_ROJO), 0.62f);
         barrera = escalar(recorte(escenario, Atlas::SACOS_2), kBarreraAncho / float(Atlas::SACOS_2.width()));
-        tricolor = escalar(recorte(escenario, Atlas::BANDERA_TRICOLOR), 0.85f);
-    }
-    for (int k = 1; k <= kTirasTricolor; ++k) {
-        const int alto = qMax(1, tricolor.height() * k / kTirasTricolor);
-        tiraTricolor.push_back(tricolor.copy(0, 0, tricolor.width(), alto));
     }
     canonEspejo = espejar(canon);
     canonRotoEspejo = espejar(canonRoto);
@@ -372,22 +361,6 @@ void EscenaAsalto::armarEscenario() {
     if (!nivel)
         return;
 
-    const float sx = nivel->getSalidaX();
-    const float sy = nivel->getSalidaY();
-    const float sr = nivel->getSalidaRadio();
-    salida = addEllipse(sx - sr, sy - sr, sr * 2.f, sr * 2.f, QPen(QColor(226, 177, 90, 70), 3), QBrush(QColor(226, 177, 90, 18)));
-    salida->setZValue(kZSalida);
-    salidaEstado = 0;
-    salidaTexto = addSimpleText(QStringLiteral("SALIDA"));
-    QFont letra(QStringLiteral("Georgia"));
-    letra.setPixelSize(22);
-    letra.setBold(true);
-    salidaTexto->setFont(letra);
-    salidaTexto->setBrush(QColor(255, 232, 160));
-    salidaTexto->setPos(sx - salidaTexto->boundingRect().width() / 2.f, sy - sr - 34.f);
-    salidaTexto->setZValue(kZSalida + 0.01f);
-    salidaTexto->hide();
-
     Estructura *lista[3] = {nivel->getPolvorin(), nivel->getBandera(), nivel->getCanon()};
     for (Estructura *objetivo : lista) {
         auto *flecha = addPolygon(puntaFlecha(), QPen(QColor(50, 28, 10), 2), QBrush(QColor(255, 208, 70)));
@@ -395,24 +368,6 @@ void EscenaAsalto::armarEscenario() {
         flechas.push_back(flecha);
         objetivos.push_back(objetivo);
     }
-    auto *azul = addPolygon(puntaFlecha(), QPen(QColor(10, 28, 56), 2), QBrush(QColor(110, 190, 255)));
-    azul->setZValue(kZFlecha);
-    azul->hide();
-    flechas.push_back(azul);
-
-    Estructura *asta = nivel->getBandera();
-    const float zr = nivel->getZonaBanderaRadio();
-    const float zx = asta->getCentroX();
-    const float zy = asta->getY() + asta->getAlto();
-    zonaAro = addEllipse(zx - zr, zy - zr, zr * 2.f, zr * 2.f, QPen(QColor(110, 190, 255, 190), 3), QBrush(QColor(110, 190, 255, 28)));
-    zonaAro->setZValue(kZZona);
-    zonaAro->hide();
-    const float zs = zr - 4.f;
-    zonaSector = addEllipse(zx - zs, zy - zs, zs * 2.f, zs * 2.f, QPen(Qt::NoPen), QBrush(QColor(150, 220, 255, 150)));
-    zonaSector->setStartAngle(90 * 16);
-    zonaSector->setSpanAngle(0);
-    zonaSector->setZValue(kZZona + 0.01f);
-    zonaSector->hide();
 }
 
 void EscenaAsalto::armarConos() {
@@ -515,7 +470,7 @@ void EscenaAsalto::armarHud() {
     }
 
     avisoRefuerzos = crearAviso(QStringLiteral("¡REFUERZOS DEL CORONEL!"), QColor(176, 40, 36, 215));
-    avisoHuida = crearAviso(QStringLiteral("¡HUYE! VUELVE A LA SALIDA"), QColor(196, 112, 24, 225));
+    avisoResistencia = crearAviso(QStringLiteral("¡RESISTE! LOS PATRIOTAS YA VIENEN"), QColor(196, 112, 24, 225));
 }
 
 void EscenaAsalto::pulsar(int tecla) {
@@ -593,7 +548,6 @@ void EscenaAsalto::avanzar(float dt) {
     sincronizar(dt);
     actualizarEfectos(dt);
     actualizarConos();
-    actualizarBandera();
     actualizarObjetivos();
     actualizarHud();
     dibujarMarcador();
@@ -754,12 +708,6 @@ void EscenaAsalto::crearPieza(Entidad *entidad, const std::vector<Entidad *> &li
     if (pieza.clase == CLASE_ESTRUCTURA && nivel) {
         const std::vector<Estructura *> &torres = nivel->getTorres();
         pieza.variante = (!torres.empty() && torres.front() == entidad) ? 0 : 1;
-        const Estructura *estructura = static_cast<const Estructura *>(entidad);
-        if (estructura->getTipo() == EST_BANDERA && !tiraTricolor.isEmpty()) {
-            pieza.tricolor = addPixmap(QPixmap());
-            pieza.tricolor->setZValue(kZPersonaje + pieza.pieY * 0.001f + 0.0002f);
-            pieza.tricolor->hide();
-        }
     }
 
     piezas.insert(entidad, pieza);
@@ -987,22 +935,6 @@ void EscenaAsalto::vestirEstructura(Estructura *estructura, Pieza &pieza) {
                            base - imagen->height() * 0.75f - pieza.humo->pixmap().height() * 0.5f - 6.f * oscila);
         pieza.humo->setOpacity(0.48 + 0.12 * oscila);
     }
-
-    if (pieza.tricolor) {
-        const float avance = nivel->estaBanderaIzada() ? 1.f : nivel->getProgresoIzado();
-        const int paso = avance <= 0.f ? 0 : std::min(kTirasTricolor, std::max(1, int(std::ceil(avance * kTirasTricolor))));
-        if (paso != pieza.pasoIzado) {
-            pieza.pasoIzado = paso;
-            if (paso == 0) {
-                pieza.tricolor->hide();
-            } else {
-                const QPixmap &tira = tiraTricolor.at(paso - 1);
-                pieza.tricolor->setPixmap(tira);
-                pieza.tricolor->setPos(cx - tira.width() / 2.f, base - tira.height());
-                pieza.tricolor->show();
-            }
-        }
-    }
 }
 
 void EscenaAsalto::vestirProyectil(Entidad *entidad, Pieza &pieza) {
@@ -1022,7 +954,7 @@ void EscenaAsalto::retirarPieza(Pieza &pieza) {
         else
             lanzarEfecto(EF_CHISPA, pieza.x, pieza.pieY, 0.f);
     }
-    QGraphicsItem *items[5] = {pieza.item, pieza.sombra, pieza.humo, pieza.tricolor, pieza.anillo};
+    QGraphicsItem *items[4] = {pieza.item, pieza.sombra, pieza.humo, pieza.anillo};
     for (QGraphicsItem *item : items) {
         if (!item)
             continue;
@@ -1032,7 +964,6 @@ void EscenaAsalto::retirarPieza(Pieza &pieza) {
     pieza.item = nullptr;
     pieza.sombra = nullptr;
     pieza.humo = nullptr;
-    pieza.tricolor = nullptr;
     pieza.anillo = nullptr;
 }
 
@@ -1175,72 +1106,19 @@ void EscenaAsalto::actualizarObjetivos() {
         if (pendiente)
             flechas.at(i)->setPos(objetivo->getCentroX(), objetivo->getY() + arriba[i] + 5.f * std::sin(tiempo * 5.f + float(i)));
     }
-
-    if (objetivos.size() >= 2 && objetivos.at(1) && flechas.size() >= 4) {
-        const bool izar = nivel->estaBanderaTumbada() && !nivel->estaBanderaIzada();
-        QGraphicsPolygonItem *azul = flechas.at(3);
-        if (izar != azul->isVisible())
-            azul->setVisible(izar);
-        if (izar)
-            azul->setPos(objetivos.at(1)->getCentroX(), objetivos.at(1)->getY() - 30.f + 5.f * std::sin(tiempo * 5.f));
-    }
-
-    if (!salida)
-        return;
-    const bool lista = nivel->tareasCompletas();
-    const int estado = lista ? 1 : 0;
-    if (estado != salidaEstado) {
-        salidaEstado = estado;
-        salidaTexto->setVisible(lista);
-        if (lista) {
-            salida->setPen(QPen(QColor(255, 214, 110, 230), 4));
-            salida->setBrush(QBrush(QColor(226, 177, 90, 70)));
-        } else {
-            salida->setPen(QPen(QColor(226, 177, 90, 70), 3));
-            salida->setBrush(QBrush(QColor(226, 177, 90, 18)));
-        }
-    }
-    if (lista)
-        salida->setOpacity(0.72 + 0.28 * std::sin(tiempo * 5.f));
-}
-
-void EscenaAsalto::actualizarBandera() {
-    if (!zonaAro || !zonaSector)
-        return;
-    const bool activa = nivel->estaBanderaTumbada() && !nivel->estaBanderaIzada();
-    if (activa != zonaAro->isVisible())
-        zonaAro->setVisible(activa);
-    if (!activa) {
-        if (zonaSector->isVisible())
-            zonaSector->hide();
-        zonaPaso = -1;
-        return;
-    }
-    zonaAro->setOpacity(0.72 + 0.28 * std::sin(tiempo * 4.f));
-    const float avance = limitar(nivel->getProgresoIzado(), 0.f, 1.f);
-    const int paso = int(avance * float(kPasosZona));
-    if (paso != zonaPaso) {
-        zonaPaso = paso;
-        if (paso <= 0) {
-            zonaSector->hide();
-        } else {
-            zonaSector->setSpanAngle(-paso * (360 * 16 / kPasosZona));
-            zonaSector->show();
-        }
-    }
 }
 
 void EscenaAsalto::actualizarHud() {
     const float restante = nivel->getTiempoRestante();
     const int segundos = int(std::ceil(restante));
-    const bool huida = nivel->estaEnHuida();
-    const bool urgente = segundos <= 20;
+    const bool resistencia = nivel->estaEnResistencia();
+    const bool urgente = !resistencia && segundos <= 20;
     const bool parpadea = urgente && int(tiempo * 4.f) % 2 == 0;
-    const int estadoReloj = urgente ? (parpadea ? 2 : 1) : (huida ? 1 : 0);
-    if (huida != hudEnHuida) {
-        hudEnHuida = huida;
-        hudEtiquetaTiempo->setText(huida ? QStringLiteral("¡Huida!") : QStringLiteral("Tiempo"));
-        hudEtiquetaTiempo->setBrush(huida ? QColor(255, 170, 90) : QColor(255, 255, 255));
+    const int estadoReloj = urgente ? (parpadea ? 2 : 1) : (resistencia ? 1 : 0);
+    if (resistencia != hudEnResistencia) {
+        hudEnResistencia = resistencia;
+        hudEtiquetaTiempo->setText(resistencia ? QStringLiteral("¡Resiste!") : QStringLiteral("Tiempo"));
+        hudEtiquetaTiempo->setBrush(resistencia ? QColor(255, 170, 90) : QColor(255, 255, 255));
     }
     if (segundos != hudSegundos || estadoReloj != hudEstadoReloj) {
         if (segundos != hudSegundos) {
@@ -1254,7 +1132,7 @@ void EscenaAsalto::actualizarHud() {
         }
     }
 
-    const bool hechas[3] = {nivel->estaPolvorinVolado(), nivel->estaBanderaIzada(), nivel->estaCanonInutilizado()};
+    const bool hechas[3] = {nivel->estaPolvorinVolado(), nivel->estaBanderaTumbada(), nivel->estaCanonInutilizado()};
     const int marca = (hechas[0] ? 1 : 0) | (hechas[1] ? 2 : 0) | (hechas[2] ? 4 : 0);
     if (marca != hudMarcaTareas) {
         hudMarcaTareas = marca;
@@ -1282,13 +1160,13 @@ void EscenaAsalto::actualizarHud() {
     if (avisoR)
         avisoRefuerzos->setPos(camX + (vistaAncho - avisoRefuerzos->boundingRect().width()) * 0.5f, camY + 64.f);
 
-    const bool avisoH = nivel->getAvisoHuida() > 0.f;
-    if (avisoH != avisoHuidaVisible) {
-        avisoHuidaVisible = avisoH;
-        avisoHuida->setVisible(avisoH);
+    const bool avisoE = nivel->getAvisoResistencia() > 0.f;
+    if (avisoE != avisoResistenciaVisible) {
+        avisoResistenciaVisible = avisoE;
+        avisoResistencia->setVisible(avisoE);
     }
-    if (avisoH)
-        avisoHuida->setPos(camX + (vistaAncho - avisoHuida->boundingRect().width()) * 0.5f, camY + (avisoR ? 118.f : 64.f));
+    if (avisoE)
+        avisoResistencia->setPos(camX + (vistaAncho - avisoResistencia->boundingRect().width()) * 0.5f, camY + (avisoR ? 118.f : 64.f));
 }
 
 void EscenaAsalto::dibujarMarcador() {

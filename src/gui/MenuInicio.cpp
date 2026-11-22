@@ -30,8 +30,9 @@ MenuInicio::MenuInicio(QWidget *parent) : QWidget(parent) {
     botonEmboscada = new QPushButton(QStringLiteral("Nivel 1. Emboscada"));
     botonAsalto = new QPushButton(QStringLiteral("Nivel 2. Asalto"));
     botonPenon = new QPushButton(QStringLiteral("Nivel 3. El Peñón"));
+    botonDificultad = new QPushButton();
     botonSalir = new QPushButton(QStringLiteral("Salir"));
-    const QPushButton *botones[] = {botonCampana, botonEmboscada, botonAsalto, botonPenon, botonSalir};
+    const QPushButton *botones[] = {botonCampana, botonEmboscada, botonAsalto, botonPenon, botonDificultad, botonSalir};
     for (const QPushButton *boton : botones) {
         const_cast<QPushButton *>(boton)->setStyleSheet(QString::fromLatin1(kBoton));
         const_cast<QPushButton *>(boton)->setCursor(Qt::PointingHandCursor);
@@ -44,6 +45,7 @@ MenuInicio::MenuInicio(QWidget *parent) : QWidget(parent) {
     columna->addWidget(botonEmboscada);
     columna->addWidget(botonAsalto);
     columna->addWidget(botonPenon);
+    columna->addWidget(botonDificultad);
     columna->addWidget(botonSalir);
     auto *atajo = new QLabel(QStringLiteral("Enter: campaña completa"));
     atajo->setAlignment(Qt::AlignRight);
@@ -64,7 +66,22 @@ MenuInicio::MenuInicio(QWidget *parent) : QWidget(parent) {
     connect(botonEmboscada, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_EMBOSCADA); });
     connect(botonAsalto, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_ASALTO); });
     connect(botonPenon, &QPushButton::clicked, this, [this] { emit nivelElegido(NIVEL_PENON); });
+    connect(botonDificultad, &QPushButton::clicked, this, [this] {
+        dificultadActual = dificultadActual == DIF_NORMAL ? DIF_DIFICIL : DIF_NORMAL;
+        actualizarTextoDificultad();
+        emit dificultadCambiada();
+    });
     connect(botonSalir, &QPushButton::clicked, this, &MenuInicio::salir);
+    actualizarTextoDificultad();
+}
+
+short MenuInicio::dificultad() const {
+    return dificultadActual;
+}
+
+void MenuInicio::actualizarTextoDificultad() {
+    botonDificultad->setText(dificultadActual == DIF_DIFICIL ? QStringLiteral("Dificultad (nivel 3): Difícil")
+                                                             : QStringLiteral("Dificultad (nivel 3): Normal"));
 }
 
 void MenuInicio::paintEvent(QPaintEvent *evento) {

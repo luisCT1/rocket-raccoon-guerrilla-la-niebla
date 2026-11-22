@@ -4,13 +4,12 @@
 #include "Proyectil.h"
 #include "Rocket.h"
 #include "MovOscilatorio.h"
-#include "AgenteTipos.h"
 #include "Eventos.h"
 
 namespace {
 constexpr float ANCHO_MUNDO = 3920.f;
 constexpr float ALTO_MUNDO = 720.f;
-constexpr float ANCHO_VISTA = 1280.f;
+constexpr float FRACCION_ROCKET = 420.f / 1280.f;
 constexpr float SUELO = 548.f;
 constexpr float ROCKET_X = 150.f;
 constexpr float HUECO_INI = 1980.f;
@@ -111,12 +110,13 @@ void NivelPenon::actualizar(float dt) {
 
 void NivelPenon::moverCamara(float dt) {
     if (!rocket) return;
-    const float objetivo = rocket->getX() - 420.f;
+    const float objetivo = rocket->getX() - FRACCION_ROCKET * anchoVista;
     float k = SEGUIMIENTO_CAMARA * dt;
     if (k > 1.f) k = 1.f;
     camaraX += (objetivo - camaraX) * k;
+    const float tope = anchoMundo - anchoVista;
+    if (camaraX > tope) camaraX = tope;
     if (camaraX < 0.f) camaraX = 0.f;
-    else if (camaraX > anchoMundo - ANCHO_VISTA) camaraX = anchoMundo - ANCHO_VISTA;
 }
 
 void NivelPenon::seguirDisparos() {

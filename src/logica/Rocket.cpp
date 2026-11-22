@@ -31,6 +31,7 @@ constexpr float CAIDA_RUIDO = 180.f;
 constexpr float TIEMPO_INVULNERABLE = 1.f;
 constexpr float AVISO_GRANADA = 0.5f;
 constexpr short MUNICION_MAX = 30;
+constexpr float RECARGA_BALA_FURIA = 0.12f;
 constexpr float RECARGA_BALA = 1.2f;     //recupera una bala cada tanto: nunca queda sin poder disparar
 constexpr float DIAGONAL = 0.7071f;
 }
@@ -91,8 +92,9 @@ void Rocket::actualizar(float dt) {
 
     if (municion < MUNICION_MAX) {
         recargaMunicion += dt;
-        if (recargaMunicion >= RECARGA_BALA) {
-            recargaMunicion -= RECARGA_BALA;
+        const float periodo = furioso ? RECARGA_BALA_FURIA : RECARGA_BALA;
+        if (recargaMunicion >= periodo) {
+            recargaMunicion -= periodo;
             ++municion;
         }
     }

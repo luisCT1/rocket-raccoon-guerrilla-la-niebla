@@ -4,7 +4,6 @@
 #include "Estructura.h"
 #include "Proyectil.h"
 #include "Eventos.h"
-#include <algorithm>
 
 namespace {
 constexpr float ANCHO_MUNDO = 1600.f;
@@ -14,9 +13,6 @@ constexpr float CAMPAMENTO_X0 = 262.f, CAMPAMENTO_X1 = 1352.f;
 constexpr float CAMPAMENTO_Y0 = 285.f, CAMPAMENTO_Y1 = 704.f;
 constexpr float INICIO_X = 292.f;
 constexpr float INICIO_Y = 618.f;
-constexpr float SALIDA_X = 316.f;
-constexpr float SALIDA_Y = 650.f;
-constexpr float SALIDA_RADIO = 70.f;
 constexpr float POLVORIN_X = 943.f, POLVORIN_Y = 321.f;
 constexpr float BANDERA_X = 794.f, BANDERA_Y = 287.f;
 constexpr float CANON_X = 1244.f, CANON_Y = 450.f;
@@ -57,19 +53,16 @@ constexpr float VISION_ALERTA = 2500.f;
 
 constexpr short ESTRUCTURAS_PARA_OLEADA = 2;
 constexpr short SOLDADOS_POR_OLEADA = 4;
-constexpr short SOLDADOS_HUIDA = 5;
-const float PUERTA_X[SOLDADOS_HUIDA] = { 750.f, 795.f, 840.f, 885.f, 705.f };
+constexpr short NUM_PUERTAS = 5;
+const float PUERTA_X[NUM_PUERTAS] = { 750.f, 795.f, 840.f, 885.f, 705.f };
 constexpr float PUERTA_Y = 700.f;
 constexpr float AVISO_REFUERZOS = 4.f;
-constexpr float ZONA_BANDERA = 75.f;
-constexpr float TIEMPO_IZADO = 6.f;
-constexpr float TIEMPO_HUIDA = 35.f;
+constexpr float TIEMPO_RESISTENCIA = 20.f;
+constexpr float INTERVALO_RESISTENCIA = 1.6f;
 }
 
 NivelAsalto::NivelAsalto()
     : tiempoRestante(TIEMPO_LIMITE),
-      banderaIzada(false),
-      progresoIzado(0.f),
       polvorin(nullptr),
       bandera(nullptr),
       canon(nullptr),
@@ -78,11 +71,13 @@ NivelAsalto::NivelAsalto()
       radioConoBase(0.f),
       aperturaConoBase(0.f),
       avisoRefuerzos(0.f),
-      avisoHuida(0.f),
+      avisoResistencia(0.f),
+      proximoSoldado(0.f),
       siguientePunto(0),
+      siguientePuerta(0),
       nivelAlarma(0),
       coronelLlego(false),
-      huida(false) {
+      resistencia(false) {
     anchoMundo = ANCHO_MUNDO;
     altoMundo = ALTO_MUNDO;
     cenital = true;
@@ -130,22 +125,24 @@ void NivelAsalto::actualizar(float dt) {
     mantenerEnElCampamento();
 
     tiempoRestante -= dt;
-    if (tiempoRestante <= 0.f) {
-        tiempoRestante = 0.f;
-        terminar(false);
-        return;
-    }
+    if (tiempoRestante < 0.f) tiempoRestante = 0.f;
 
-    izarBandera(dt);
     revisarTareas();
     procesarBarriles();
     disparoDelCanon();
     vigilar(dt);
     if (avisoRefuerzos > 0.f) avisoRefuerzos -= dt;
-    if (avisoHuida > 0.f) avisoHuida -= dt;
+    if (avisoResistencia > 0.f) avisoResistencia -= dt;
+    if (resistencia) {
+        proximoSoldado -= dt;
+        if (proximoSoldado <= 0.f) {
+            proximoSoldado += INTERVALO_RESISTENCIA;
+            soltarSoldados(1);
+        }
+    }
 
     if (rocket->getVidas() <= 0) terminar(false);
-    else if (tareasCompletas() && rocketEnSalida()) terminar(true);
+    else if (tiempoRestante <= 0.f) terminar(resistencia);
 }
 
 void NivelAsalto::disparoDelCanon() {
@@ -180,7 +177,7 @@ void NivelAsalto::vigilar(float dt) {
     if (visto) {
         sinDeteccion = 0.f;
         if (enfriamientoAlarma <= 0.f) subirAlarma();
-    } else if (nivelAlarma > 0 && !huida) {
+    } else if (nivelAlarma > 0) {
         sinDeteccion += dt;
         if (sinDeteccion >= TIEMPO_CALMA) {
             sinDeteccion = 0.f;
@@ -235,20 +232,22 @@ void NivelAsalto::procesarBarriles() {
 void NivelAsalto::soltarSoldados(short cuantos) {
     short vivos = contarVivos(CLASE_ENEMIGO);
     for (short i = 0; i < cuantos && vivos < MAX_ABSOLUTO; ++i, ++vivos) {
-        agregarEntidad(crearSoldado(PUERTA_X[i], PUERTA_Y));
+        agregarEntidad(crearSoldado(PUERTA_X[siguientePuerta], PUERTA_Y));
+        siguientePuerta = static_cast<short>((siguientePuerta + 1) % NUM_PUERTAS);
     }
-    emitirEvento(EV_REFUERZOS);
 }
 
-void NivelAsalto::iniciarHuida() {
-    huida = true;
-    tiempoRestante = TIEMPO_HUIDA;
+void NivelAsalto::iniciarResistencia() {
+    resistencia = true;
+    tiempoRestante = TIEMPO_RESISTENCIA;
+    proximoSoldado = INTERVALO_RESISTENCIA;
     nivelAlarma = 3;
     sinDeteccion = 0.f;
     aplicarNivelAlarma();
     emitirEvento(EV_ALARMA);
-    soltarSoldados(SOLDADOS_HUIDA);
-    avisoHuida = AVISO_REFUERZOS;
+    soltarSoldados(SOLDADOS_POR_OLEADA);
+    emitirEvento(EV_REFUERZOS);
+    avisoResistencia = AVISO_REFUERZOS;
 }
 
 Enemigo *NivelAsalto::crearSoldado(float x, float y) {
@@ -274,6 +273,7 @@ void NivelAsalto::revisarTareas() {
         emitirEvento(EV_EXPLOSION);
         tareaCompletada();
     }
+    if (bandera->consumirDestruccion()) tareaCompletada();
     if (canon->consumirDestruccion()) {
         emitirEvento(EV_EXPLOSION);
         tareaCompletada();
@@ -282,31 +282,15 @@ void NivelAsalto::revisarTareas() {
     if (!coronelLlego && destruidas >= ESTRUCTURAS_PARA_OLEADA) {
         coronelLlego = true;
         soltarSoldados(SOLDADOS_POR_OLEADA);
+        emitirEvento(EV_REFUERZOS);
         avisoRefuerzos = AVISO_REFUERZOS;
     }
-    if (!huida && tareasCompletas()) iniciarHuida();
+    if (!resistencia && tareasCompletas()) iniciarResistencia();
 }
 
 void NivelAsalto::tareaCompletada() {
     emitirEvento(EV_TAREA_COMPLETADA);
     generarRefuerzos();
-}
-
-void NivelAsalto::izarBandera(float dt) {
-    if (!bandera->estaDestruida() || banderaIzada || rocket->getVidas() <= 0) return;
-    const float dx = rocket->getCentroX() - bandera->getCentroX();
-    const float dy = rocket->getCentroY() - (bandera->getY() + bandera->getAlto());
-    if (dx * dx + dy * dy <= ZONA_BANDERA * ZONA_BANDERA) {
-        progresoIzado += dt / TIEMPO_IZADO;
-    } else {
-        progresoIzado -= dt / (TIEMPO_IZADO * 2.f);
-        if (progresoIzado < 0.f) progresoIzado = 0.f;
-    }
-    if (progresoIzado >= 1.f) {
-        progresoIzado = 1.f;
-        banderaIzada = true;
-        tareaCompletada();
-    }
 }
 
 void NivelAsalto::generarRefuerzos() {
@@ -319,29 +303,17 @@ void NivelAsalto::generarRefuerzos() {
 }
 
 bool NivelAsalto::tareasCompletas() const {
-    return polvorin->estaDestruida() && banderaIzada && canon->estaDestruida();
-}
-
-bool NivelAsalto::rocketEnSalida() const {
-    const float dx = rocket->getCentroX() - SALIDA_X;
-    const float dy = rocket->getCentroY() - SALIDA_Y;
-    return dx * dx + dy * dy <= SALIDA_RADIO * SALIDA_RADIO;
+    return polvorin->estaDestruida() && bandera->estaDestruida() && canon->estaDestruida();
 }
 
 bool NivelAsalto::victoria() const { return terminado && ganado; }
 bool NivelAsalto::derrota() const { return terminado && !ganado; }
 
 float NivelAsalto::getTiempoRestante() const { return tiempoRestante; }
-bool NivelAsalto::estaEnHuida() const { return huida; }
+bool NivelAsalto::estaEnResistencia() const { return resistencia; }
 bool NivelAsalto::estaPolvorinVolado() const { return polvorin->estaDestruida(); }
 bool NivelAsalto::estaBanderaTumbada() const { return bandera->estaDestruida(); }
-bool NivelAsalto::estaBanderaIzada() const { return banderaIzada; }
 bool NivelAsalto::estaCanonInutilizado() const { return canon->estaDestruida(); }
-float NivelAsalto::getProgresoIzado() const { return progresoIzado; }
-float NivelAsalto::getZonaBanderaRadio() const { return ZONA_BANDERA; }
-float NivelAsalto::getSalidaX() const { return SALIDA_X; }
-float NivelAsalto::getSalidaY() const { return SALIDA_Y; }
-float NivelAsalto::getSalidaRadio() const { return SALIDA_RADIO; }
 Estructura *NivelAsalto::getPolvorin() const { return polvorin; }
 Estructura *NivelAsalto::getBandera() const { return bandera; }
 Estructura *NivelAsalto::getCanon() const { return canon; }
@@ -349,4 +321,4 @@ const std::vector<Estructura *> &NivelAsalto::getTorres() const { return torres;
 
 short NivelAsalto::getNivelAlarma() const { return nivelAlarma; }
 float NivelAsalto::getAvisoRefuerzos() const { return avisoRefuerzos > 0.f ? avisoRefuerzos : 0.f; }
-float NivelAsalto::getAvisoHuida() const { return avisoHuida > 0.f ? avisoHuida : 0.f; }
+float NivelAsalto::getAvisoResistencia() const { return avisoResistencia > 0.f ? avisoResistencia : 0.f; }

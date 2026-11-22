@@ -25,7 +25,7 @@ enum EventoJuego : short {
     EV_BARRIL
 };
 
-enum NivelDificultad : short { DIF_FACIL = 0, DIF_NORMAL = 1, DIF_DIFICIL = 2 };
+enum NivelDificultad : short { DIF_NORMAL = 0, DIF_DIFICIL = 1 };
 
 enum NumeroNivel : short { NIVEL_EMBOSCADA = 1, NIVEL_ASALTO = 2, NIVEL_PENON = 3 };
 

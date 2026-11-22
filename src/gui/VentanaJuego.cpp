@@ -40,6 +40,7 @@ VentanaJuego::VentanaJuego(QWidget *parent) : QMainWindow(parent) {
     connect(menu, &MenuInicio::salir, this, &QWidget::close);
     connect(menu, &MenuInicio::campana, this, [this] { sonido->tocar(QStringLiteral("clic")); });
     connect(menu, &MenuInicio::nivelElegido, this, [this](int) { sonido->tocar(QStringLiteral("clic")); });
+    connect(menu, &MenuInicio::dificultadCambiada, this, [this] { sonido->tocar(QStringLiteral("clic")); });
 
     vista = new QGraphicsView();
     vista->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -127,8 +128,9 @@ void VentanaJuego::abrirNivel(int numero) {
     vista->setScene(nullptr);
     delete escena;
     nivelCurso = numero;
+    const short dificultad = menu->dificultad();
     if (numero == NIVEL_PENON) {
-        escena = new EscenaPenon();
+        escena = new EscenaPenon(dificultad);
         ayuda->setText(QStringLiteral(
             "A D caminan    W salta    Espacio dispara    G granada    Shift impulso    F furia    Esc menú"));
         mision->setText(QStringLiteral(
@@ -141,9 +143,9 @@ void VentanaJuego::abrirNivel(int numero) {
             "W A S D se mueven    Espacio dispara    G granada    Shift impulso    F furia    Esc menú"));
         mision->setText(QStringLiteral(
             "1816 — Asalto al patio\n"
-            "Vuela el polvorín, tumba la bandera y quédate 6 s en el aro azul para izar la tricolor. Inutiliza el cañón: está tras barreras, ataca por el pasillo del oeste.\n"
+            "Vuela el polvorín, tumba la bandera e inutiliza el cañón: está tras barreras, ataca por el pasillo del oeste.\n"
             "El cañón siempre te alcanza, no te quedes quieto. Los barriles rojos explotan en cadena y un soldado o torre que te vea sube la alarma.\n"
-            "Con las tres tareas hechas salta la alarma maxima: entran refuerzos por la puerta sur y tienes 35 s para huir a la salida del oeste. El nivel dura 120 segundos."));
+            "Con las tres tareas hechas salta la alarma maxima y los soldados no dejan de entrar por la puerta sur: aguanta 20 segundos hasta que lleguen los patriotas y ganas. Para las tareas tienes 120 segundos."));
     } else {
         escena = new EscenaEmboscada();
         ayuda->setText(QStringLiteral(
@@ -153,6 +155,8 @@ void VentanaJuego::abrirNivel(int numero) {
             "El convoy real lleva el aviso. Destruye las tres carretas: un disparo al barril las vuela.\n"
             "Si el correo llega al final del camino, la misión falla. Tienes tres oportunidades."));
     }
+    if (numero == NIVEL_PENON && dificultad == DIF_DIFICIL)
+        mision->setText(mision->text() + QStringLiteral("\nDificultad: difícil"));
     escena->fijarSonido(sonido);
     sonido->iniciarNivel(numero);
     vista->setBackgroundBrush(escena->backgroundBrush());

@@ -22,7 +22,7 @@ public:
     Juego();
     ~Juego();
 
-    //n: 1 emboscada, 2 asalto, 3 peñón. dif: DIF_FACIL, DIF_NORMAL o DIF_DIFICIL.
+    //n: 1 emboscada, 2 asalto, 3 peñón. dif: DIF_NORMAL o DIF_DIFICIL.
     //Lanza std::out_of_range si alguno no existe. Si falla, el nivel que estaba corriendo no se toca.
     void iniciarNivel(short n, short dif);
     //dt en segundos. Se limita a 0.05 s: una pausa o un salto de cuadros no dispara la física.

@@ -49,12 +49,10 @@ private:
         QGraphicsPixmapItem *item = nullptr;
         QGraphicsPixmapItem *sombra = nullptr;
         QGraphicsPixmapItem *humo = nullptr;
-        QGraphicsPixmapItem *tricolor = nullptr;
         QGraphicsEllipseItem *anillo = nullptr;
         qint64 llave = 0;
         int cuadro = 0;
         int variante = 0;
-        int pasoIzado = 0;
         short clase = 0;
         short estado = 0;
         bool espejo = false;
@@ -94,7 +92,6 @@ private:
     void poner(Pieza &pieza, const QPixmap &imagen, float x, float y);
     void lanzarEfecto(short tipo, float x, float y, float radio, bool espejo = false, float retraso = 0.f);
     void actualizarEfectos(float dt);
-    void actualizarBandera();
     void actualizarConos();
     void actualizarObjetivos();
     void actualizarHud();
@@ -140,8 +137,6 @@ private:
     QPixmap canonRotoEspejo;
     QPixmap barril;
     QPixmap barrera;
-    QPixmap tricolor;
-    QVector<QPixmap> tiraTricolor;
     QPixmap humoDestruccion;
     QPixmap explosion1;
     QPixmap explosion2;
@@ -164,12 +159,7 @@ private:
     QGraphicsEllipseItem *hudPunto[3] = {nullptr, nullptr, nullptr};
     QGraphicsEllipseItem *hudAlarma[3] = {nullptr, nullptr, nullptr};
     QGraphicsPathItem *avisoRefuerzos = nullptr;
-    QGraphicsPathItem *avisoHuida = nullptr;
-
-    QGraphicsEllipseItem *salida = nullptr;
-    QGraphicsSimpleTextItem *salidaTexto = nullptr;
-    QGraphicsEllipseItem *zonaAro = nullptr;
-    QGraphicsEllipseItem *zonaSector = nullptr;
+    QGraphicsPathItem *avisoResistencia = nullptr;
 
     QVector<QGraphicsPolygonItem *> conos;
     QVector<Estructura *> torresVigiladas;
@@ -197,11 +187,9 @@ private:
     int hudEstadoReloj = -1;
     int hudMarcaTareas = -1;
     int hudNivelAlarma = -1;
-    int salidaEstado = -1;
-    int zonaPaso = -1;
     bool avisoRefuerzosVisible = false;
-    bool avisoHuidaVisible = false;
-    bool hudEnHuida = false;
+    bool avisoResistenciaVisible = false;
+    bool hudEnResistencia = false;
     short hudVidas = -1;
     int hudSalud = -1;
     short hudMunicion = -1;
