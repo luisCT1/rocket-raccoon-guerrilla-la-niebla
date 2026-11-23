@@ -226,6 +226,12 @@ void Sonido::procesar(const std::vector<short> &eventos) {
         case EV_TROMBA:
             tocar(QStringLiteral("viento"));
             break;
+        case EV_ESCUDO:
+            tocar(QStringLiteral("furia"), 0.8f);
+            break;
+        case EV_ESCUDO_ROTO:
+            tocar(QStringLiteral("explosion"), 0.6f);
+            break;
         default:
             break;
         }

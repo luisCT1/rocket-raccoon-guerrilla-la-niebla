@@ -38,15 +38,12 @@ constexpr float RESISTENCIA_CANON = 450.f;
 constexpr float ENFRIAMIENTO_ALARMA = 6.f;
 constexpr float TIEMPO_CALMA = 18.f;
 constexpr float CADENCIA_CANON[4] = { 1.8f, 1.6f, 1.3f, 1.0f };
-constexpr float MULT_CONO[4] = { 1.f, 1.1f, 1.25f, 1.4f };
-constexpr float MULT_GIRO[4] = { 1.f, 1.15f, 1.3f, 1.6f };
 
 constexpr short NUM_PUNTOS = 4;
 const float PUNTO_X[NUM_PUNTOS] = { 850.f, 1273.f, 480.f, 1100.f };
 const float PUNTO_Y[NUM_PUNTOS] = { 262.f, 330.f, 290.f, 632.f };
 constexpr short REFUERZOS_POR_ALARMA = 1;
-constexpr short MAX_SOLDADOS = 6;
-constexpr short MAX_SOLDADOS_ALARMA_MAX = 8;
+constexpr short MAX_SOLDADOS = 8;
 constexpr short MAX_ABSOLUTO = 12;
 constexpr float VISION_PATRULLA = 320.f;
 constexpr float VISION_ALERTA = 2500.f;
@@ -68,8 +65,6 @@ NivelAsalto::NivelAsalto()
       canon(nullptr),
       enfriamientoAlarma(0.f),
       sinDeteccion(0.f),
-      radioConoBase(0.f),
-      aperturaConoBase(0.f),
       avisoRefuerzos(0.f),
       avisoResistencia(0.f),
       proximoSoldado(0.f),
@@ -100,8 +95,6 @@ NivelAsalto::NivelAsalto()
         agregarEntidad(t);
         torres.push_back(t);
     }
-    radioConoBase = torres[0]->getRadioCono();
-    aperturaConoBase = torres[0]->getApertura();
 
     barriles.reserve(NUM_BARRILES);
     for (short i = 0; i < NUM_BARRILES; ++i) {
@@ -198,12 +191,6 @@ void NivelAsalto::subirAlarma() {
 }
 
 void NivelAsalto::aplicarNivelAlarma() {
-    const float radio = radioConoBase * MULT_CONO[nivelAlarma];
-    const float giro = MULT_GIRO[nivelAlarma];
-    for (short i = 0; i < static_cast<short>(torres.size()); ++i) {
-        torres[i]->fijarCono(radio, aperturaConoBase);
-        torres[i]->fijarVelocidadGiro(TORRE_OMEGA[i] * giro);
-    }
     canon->fijarCadencia(CADENCIA_CANON[nivelAlarma]);
     const float vision = visionActual();
     for (Entidad *e : entidades) {
@@ -294,9 +281,8 @@ void NivelAsalto::tareaCompletada() {
 }
 
 void NivelAsalto::generarRefuerzos() {
-    const short tope = nivelAlarma >= 3 ? MAX_SOLDADOS_ALARMA_MAX : MAX_SOLDADOS;
     short vivos = contarVivos(CLASE_ENEMIGO);
-    for (short i = 0; i < REFUERZOS_POR_ALARMA && vivos < tope; ++i, ++vivos) {
+    for (short i = 0; i < REFUERZOS_POR_ALARMA && vivos < MAX_SOLDADOS; ++i, ++vivos) {
         agregarEntidad(crearSoldado(PUNTO_X[siguientePunto], PUNTO_Y[siguientePunto]));
         siguientePunto = static_cast<short>((siguientePunto + 1) % NUM_PUNTOS);
     }

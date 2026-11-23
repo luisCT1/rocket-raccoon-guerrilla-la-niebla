@@ -31,6 +31,7 @@ protected:
     float apertura;
     float cos2Media;
     MovCircular *giro;
+    bool soloApoyo;
 
 public:
     Estructura(short tipo, float x, float y);
@@ -57,6 +58,7 @@ public:
     void fijarCadencia(float segundos);
     void fijarResistencia(float valor);
     void fijarTamano(float nuevoAncho, float nuevoAlto);
+    void fijarSoloApoyo(bool valor);
     void fijarCono(float radio, float apertura);
     void fijarVelocidadGiro(float omega);
 };

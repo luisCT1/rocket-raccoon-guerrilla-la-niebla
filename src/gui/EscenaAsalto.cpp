@@ -101,7 +101,6 @@ const float kLanzaRocket = 0.45f;
 const float kDanioRocket = 0.40f;
 const float kCaidaDuracion = 1.9f;
 const float kExplosionDuracion = 1.4f;
-const float kChispaDuracion = 0.14f;
 const float kPanelAncho = 296.f;
 const float kMargen = 16.f;
 const int kMaxEfectos = 64;
@@ -397,8 +396,6 @@ void EscenaAsalto::armarConos() {
         conos.push_back(cono);
         torresVigiladas.push_back(torre);
         conoTono.push_back(0);
-        conoEscala.push_back(1.f);
-        conoRadioBase.push_back(radio);
     }
 }
 
@@ -948,12 +945,8 @@ void EscenaAsalto::vestirProyectil(Entidad *entidad, Pieza &pieza) {
 void EscenaAsalto::retirarPieza(Pieza &pieza) {
     if (pieza.clase == CLASE_ENEMIGO)
         lanzarEfecto(EF_CAIDA, pieza.x, pieza.pieY, 0.f, pieza.espejo);
-    else if (pieza.clase == CLASE_PROYECTIL) {
-        if (pieza.bombeado)
-            lanzarEfecto(EF_EXPLOSION, pieza.destinoX, pieza.destinoY, pieza.radio);
-        else
-            lanzarEfecto(EF_CHISPA, pieza.x, pieza.pieY, 0.f);
-    }
+    else if (pieza.clase == CLASE_PROYECTIL && pieza.bombeado)
+        lanzarEfecto(EF_EXPLOSION, pieza.destinoX, pieza.destinoY, pieza.radio);
     QGraphicsItem *items[4] = {pieza.item, pieza.sombra, pieza.humo, pieza.anillo};
     for (QGraphicsItem *item : items) {
         if (!item)
@@ -989,11 +982,7 @@ void EscenaAsalto::actualizarEfectos(float dt) {
         efecto.edad += dt;
         const float t = efecto.edad;
 
-        float duracion = kExplosionDuracion;
-        if (efecto.tipo == EF_CHISPA)
-            duracion = kChispaDuracion;
-        else if (efecto.tipo == EF_CAIDA)
-            duracion = kCaidaDuracion;
+        const float duracion = efecto.tipo == EF_CAIDA ? kCaidaDuracion : kExplosionDuracion;
 
         if (t >= duracion) {
             devolverItem(efecto.item);
@@ -1028,9 +1017,6 @@ void EscenaAsalto::actualizarEfectos(float dt) {
             }
             if (imagen->isNull())
                 imagen = &chispa;
-        } else if (efecto.tipo == EF_CHISPA) {
-            escala = 0.6f + 0.8f * t / kChispaDuracion;
-            opacidad = 1.f - t / kChispaDuracion;
         } else {
             int fila = Atlas::SOLDADO_CAIDO;
             int col = 5;
@@ -1079,11 +1065,6 @@ void EscenaAsalto::actualizarConos() {
         if (!activa)
             continue;
         cono->setRotation(torre->anguloVigilancia() * 180.f / kPi);
-        const float escala = conoRadioBase.at(i) > 0.f ? torre->getRadioCono() / conoRadioBase.at(i) : 1.f;
-        if (std::fabs(escala - conoEscala.at(i)) > 0.001f) {
-            conoEscala[i] = escala;
-            cono->setScale(escala);
-        }
         const bool alerta = rocket && rocket->getVidas() > 0 && torre->detecta(rocket);
         const int tono = alerta ? 1 : 0;
         if (tono != conoTono.at(i)) {

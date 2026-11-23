@@ -39,7 +39,8 @@ Estructura::Estructura(short t, float x_, float y_)
       radioCono(0.f),
       apertura(0.f),
       cos2Media(0.f),
-      giro(nullptr) {
+      giro(nullptr),
+      soloApoyo(false) {
     if (tipo == EST_TORRE) {
         seguirModelos = false;
         fijarCono(RADIO_TORRE, APERTURA_TORRE);
@@ -63,7 +64,7 @@ short Estructura::estadoVisual() const {
 }
 
 bool Estructura::esSolida() const {
-    return !destruida;
+    return !destruida && !soloApoyo;
 }
 
 void Estructura::recibirDanio(float cantidad) {
@@ -152,6 +153,10 @@ void Estructura::fijarTamano(float nuevoAncho, float nuevoAlto) {
     if (nuevoAncho <= 0.f || nuevoAlto <= 0.f) throw std::invalid_argument("Estructura: el tamano debe ser positivo");
     ancho = nuevoAncho;
     alto = nuevoAlto;
+}
+
+void Estructura::fijarSoloApoyo(bool valor) {
+    soloApoyo = valor;
 }
 
 void Estructura::fijarCono(float radio, float apertura_) {

@@ -58,7 +58,6 @@ public:
     Proyectil *lanzarGranada(float objX, float objY);
     bool dash(char dir);
     bool activarFuria();
-    bool recibirDanio(); //false si estaba invulnerable y no perdió vida
     void perderVida();   //sin invulnerabilidad que valga (caída al barranco)
     void sumarFuria(float cantidad);
     float ruidoActual() const;
@@ -85,6 +84,7 @@ public:
     bool estaFurioso() const;
     bool estaEnSuelo() const;
     bool esInvulnerable() const;
+    bool esVulnerable() const; //false si no tiene vidas, está invulnerable o va en dash: ahí un golpe no cuenta
     bool dashListo() const;
 };
 

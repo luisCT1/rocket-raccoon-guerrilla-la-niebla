@@ -16,13 +16,14 @@ enum EventoJuego : short {
     EV_ALARMA,
     EV_CANON_DISPARA,
     EV_CORREO_HUYE,
-    EV_CAMBIO_FASE_JEFE,
     EV_ATAQUE_GIRATORIO,
     EV_TROMBA,
     EV_VICTORIA,
     EV_DERROTA,
     EV_REFUERZOS,
-    EV_BARRIL
+    EV_BARRIL,
+    EV_ESCUDO,
+    EV_ESCUDO_ROTO
 };
 
 enum NivelDificultad : short { DIF_NORMAL = 0, DIF_DIFICIL = 1 };

@@ -18,8 +18,6 @@ private:
     std::vector<Estructura *> barriles;
     float enfriamientoAlarma;
     float sinDeteccion;
-    float radioConoBase;
-    float aperturaConoBase;
     float avisoRefuerzos;
     float avisoResistencia;
     float proximoSoldado;

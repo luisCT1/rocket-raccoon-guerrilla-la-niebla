@@ -155,8 +155,10 @@ void VentanaJuego::abrirNivel(int numero) {
             "El convoy real lleva el aviso. Destruye las tres carretas: un disparo al barril las vuela.\n"
             "Si el correo llega al final del camino, la misión falla. Tienes tres oportunidades."));
     }
-    if (numero == NIVEL_PENON && dificultad == DIF_DIFICIL)
-        mision->setText(mision->text() + QStringLiteral("\nDificultad: difícil"));
+    if (numero == NIVEL_PENON)
+        mision->setText(mision->text() + (dificultad == DIF_DIFICIL
+            ? QStringLiteral("\nDificultad: difícil. Un Capitán más fuerte que levanta un escudo al llegar a la mitad de su vida, y un cañón que apunta adelantándose a tus pasos. Las losas oscilan más. Una roca te deja subir durante el combate.")
+            : QStringLiteral("\nDificultad: normal. Una roca te deja subir durante el combate.")));
     escena->fijarSonido(sonido);
     sonido->iniciarNivel(numero);
     vista->setBackgroundBrush(escena->backgroundBrush());

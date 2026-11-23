@@ -233,7 +233,7 @@ bool Rocket::activarFuria() {
 
 void Rocket::recibirDanio(float cantidad) {
     //Durante el dash no lo tocan: por eso sirve para zafarse
-    if (vidas <= 0 || invulnerable > 0.f || tiempoDash > 0.f) return;
+    if (!esVulnerable()) return;
     if (cantidad < 8.f) cantidad = 25.f; //rozarse con un soldado también duele
     cayo = false;
     salud -= cantidad;
@@ -248,13 +248,6 @@ void Rocket::recibirDanio(float cantidad) {
         salud = saludMax;
         invulnerable = TIEMPO_INVULNERABLE;
     }
-}
-
-bool Rocket::recibirDanio() {
-    const float antes = salud;
-    const short oportunidades = vidas;
-    recibirDanio(34.f);
-    return salud < antes || vidas < oportunidades;
 }
 
 void Rocket::perderVida() {
@@ -323,4 +316,5 @@ char Rocket::getDireccion() const { return direccion; }
 bool Rocket::estaFurioso() const { return furioso; }
 bool Rocket::estaEnSuelo() const { return enSuelo; }
 bool Rocket::esInvulnerable() const { return invulnerable > 0.f; }
+bool Rocket::esVulnerable() const { return vidas > 0 && invulnerable <= 0.f && tiempoDash <= 0.f; }
 bool Rocket::dashListo() const { return recargaDash <= 0.f; }

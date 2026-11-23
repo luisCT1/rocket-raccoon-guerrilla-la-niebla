@@ -76,7 +76,7 @@ private:
         bool espejo = false;
     };
 
-    enum TipoEfecto : short { EF_EXPLOSION = 0, EF_CHISPA, EF_CAIDA };
+    enum TipoEfecto : short { EF_EXPLOSION = 0, EF_CAIDA };
 
     void cargarSprites();
     void armarEscenario();
@@ -164,8 +164,6 @@ private:
     QVector<QGraphicsPolygonItem *> conos;
     QVector<Estructura *> torresVigiladas;
     QVector<int> conoTono;
-    QVector<float> conoEscala;
-    QVector<float> conoRadioBase;
     QBrush brochaCono[2];
     QPen lapizCono[2];
     QVector<QGraphicsPolygonItem *> flechas;
