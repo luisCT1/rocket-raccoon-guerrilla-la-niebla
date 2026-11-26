@@ -8,7 +8,7 @@
 namespace {
 constexpr float ANCHO_MUNDO = 1600.f;
 constexpr float ALTO_MUNDO = 900.f;
-constexpr float TIEMPO_LIMITE = 120.f;
+constexpr float TIEMPO_LIMITE = 10.f;
 constexpr float CAMPAMENTO_X0 = 262.f, CAMPAMENTO_X1 = 1352.f;
 constexpr float CAMPAMENTO_Y0 = 285.f, CAMPAMENTO_Y1 = 704.f;
 constexpr float INICIO_X = 292.f;
